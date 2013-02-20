@@ -32,8 +32,8 @@ class RpcController (cherrybase.rpc.Controller):
             return x + y
 
     def __init__ (self):
-        super (RpcController, self).__init__ (auto_introspection = True)
         self.testlib = self.Testlib (False)
+        super (RpcController, self).__init__ ()
 
 if __name__ == '__main__':
     tree = cherrybase.ControllersTree ()

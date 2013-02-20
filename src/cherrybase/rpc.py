@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 import cherrypy
 from cherrypy.lib import xmlrpcutil
 import inspect
@@ -18,7 +19,7 @@ class Introspection (object):
     def scan (self, obj = None, path = ''):
         _obj = obj if obj else self._controller
         for member in inspect.getmembers (_obj):
-            if member [0].startswith ('_'):
+            if member [0].startswith ('_') or inspect.isclass (member [1]):
                 continue
             _path = '.'.join ((path, member [0])) if path else member [0]
             if getattr (member [1], '__rpc_exposed', False):
@@ -50,9 +51,9 @@ class Controller (object):
     '''
     _cp_config = {'tools.xmlrpc.on': True}
 
-    def __init__ (self, auto_introspection = True):
-        if auto_introspection:
-            self.system = Introspection (self)
+    def __init__ (self, introspection_factory = Introspection):
+        if introspection_factory:
+            self.system = introspection_factory (self)
             self.system.scan ()
 
     def _find_method (self, name):
