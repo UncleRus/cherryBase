@@ -1,12 +1,14 @@
 eclipse.preferences.version=1
 encoding//src/app/main.py=utf-8
 encoding//src/cherrybase/__init__.py=utf-8
-encoding//src/cherrybase/app.py=utf-8
+encoding//src/cherrybase/base.py=utf-8
 encoding//src/cherrybase/conf.py=utf-8
 encoding//src/cherrybase/db/__init__.py=utf-8
+encoding//src/cherrybase/db/base.py=utf-8
 encoding//src/cherrybase/db/drivers/__init__.py=utf-8
 encoding//src/cherrybase/db/drivers/pgsql.py=utf-8
 encoding//src/cherrybase/rpc.py=utf-8
+encoding//src/cherrybase/tasks.py=utf-8
 encoding//src/cherrybase/tools/auth.py=utf-8
 encoding//src/cherrybase/tools/gpg.py=utf-8
 encoding//src/cherrybase/tools/jinja.py=utf-8

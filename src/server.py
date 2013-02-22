@@ -2,14 +2,18 @@
 # -*- coding: utf-8 -*-
 
 import cherrybase, cherrypy, pkg_resources
-from pprint import pprint
+
+class MainController (object):
+
+    @cherrypy.expose
+    def default (self, *args, **kwargs):
+        return u'Это типа сайт без вхостинга'
 
 class RootController (object):
 
     @cherrypy.expose
     @cherrypy.tools.jinja (template = 'index.tpl')
-    def default (self, *args, **kwargs):
-        pprint (cherrypy.request.config)
+    def index (self, *args, **kwargs):
         return {'who': 'world', 'ami': 'test'}
 
 
@@ -29,17 +33,16 @@ class RpcController (cherrybase.rpc.Controller):
 
 
 if __name__ == '__main__':
-    print pkg_resources.resource_filename ('app', 'config/debug.conf')
-    server = cherrybase.app.Server (
-        applications = [
-            cherrybase.app.Application (
-                name = 'test',
-                routes = (('/', RootController (), None),),
-                vhosts = ('test.cb.ru:8080', 'www.test.cb.ru:8080'),
-                config = pkg_resources.resource_filename ('app', 'config/debug.conf')
-            )
-        ],
-        config = None
+    test = cherrybase.Application (
+        name = 'test',
+        vhosts = ('test.cb.ru:8080', 'www.test.cb.ru:8080'),
+        config = pkg_resources.resource_filename ('app', 'config/debug.conf')
     )
-    print vars (server.applications [0])
+    test.tree.add ('/', RootController ())
+
+    server = cherrybase.Server (
+        applications = [test],
+        config = None,
+        root_factory = MainController
+    )
     server.start ()
