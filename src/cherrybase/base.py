@@ -83,26 +83,35 @@ _daemon_conf = ConfigNamespace (
         'pid_file': '/var/run/cherrybase.pid'
     }
 )
+_server_conf = ConfigNamespace (
+    'server',
+    {
+        'main_handler': _Stub (),
+        'block_interval': 0.1
+    }
+)
 
 
 class Server (object):
 
-    def __init__ (self, applications = [], config = None, root_factory = _Stub):
+    def __init__ (self, applications = [], config = None):
         self.applications = applications
         if config:
             cherrypy.config.update (config)
-        self.root_factory = root_factory
 
     def start (self):
         vhosts = {}
         for app in self.applications:
             vhosts.update ({host: _cptree.Application (app.tree.root, '', app.config) for host in app.vhosts})
-        from pprint import pprint
-        pprint (vhosts)
 
         self.daemonize ()
 
-        cherrypy.tree.graft (_cpwsgi.VirtualHost (_cptree.Application (self.root_factory ()), domains = vhosts))
+        cherrypy.tree.graft (
+            _cpwsgi.VirtualHost (
+                _cptree.Application (_server_conf.main_handler),
+                domains = vhosts
+            )
+        )
 
         if hasattr (cherrypy.engine, 'signal_handler'):
             cherrypy.engine.signal_handler.subscribe ()

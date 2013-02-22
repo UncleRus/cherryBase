@@ -2,12 +2,16 @@
 # -*- coding: utf-8 -*-
 
 import cherrybase, cherrypy, pkg_resources
+from cherrypy._cperror import HTTPRedirect
 
 class MainController (object):
 
+    def __init__ (self, default_url):
+        self.default_url = default_url
+
     @cherrypy.expose
     def default (self, *args, **kwargs):
-        return u'Это типа сайт без вхостинга'
+        raise HTTPRedirect (self.default_url)
 
 class RootController (object):
 
@@ -43,6 +47,6 @@ if __name__ == '__main__':
     server = cherrybase.Server (
         applications = [test],
         config = None,
-        root_factory = MainController
+        root = MainController ('http://test.cb.ru:8080')
     )
     server.start ()
