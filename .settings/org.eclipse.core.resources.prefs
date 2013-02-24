@@ -1,4 +1,6 @@
 eclipse.preferences.version=1
+encoding//src/app/__init__.py=utf-8
+encoding//src/app/controllers.py=utf-8
 encoding//src/app/main.py=utf-8
 encoding//src/cherrybase/__init__.py=utf-8
 encoding//src/cherrybase/base.py=utf-8

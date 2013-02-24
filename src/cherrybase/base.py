@@ -94,8 +94,8 @@ _server_conf = ConfigNamespace (
 
 class Server (object):
 
-    def __init__ (self, applications = [], config = None):
-        self.applications = applications
+    def __init__ (self, applications = None, config = None):
+        self.applications = applications or []
         if config:
             cherrypy.config.update (config)
 

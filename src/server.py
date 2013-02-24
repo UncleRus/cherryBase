@@ -1,52 +1,27 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import cherrybase, cherrypy
+import argparse
 
-import cherrybase, cherrypy, pkg_resources
-from cherrypy._cperror import HTTPRedirect
-
-class MainController (object):
-
-    def __init__ (self, default_url):
-        self.default_url = default_url
-
-    @cherrypy.expose
-    def default (self, *args, **kwargs):
-        raise HTTPRedirect (self.default_url)
-
-class RootController (object):
-
-    @cherrypy.expose
-    @cherrypy.tools.jinja (template = 'index.tpl')
-    def index (self, *args, **kwargs):
-        return {'who': 'world', 'ami': 'test'}
-
-
-class RpcController (cherrybase.rpc.Controller):
-
-    class Testlib (cherrybase.rpc.Controller):
-
-        @cherrybase.rpc.expose
-        def add (self, x, y):
-            '''Сложить аргументы'''
-            return x + y
-
-    def __init__ (self):
-        self.testlib = self.Testlib (False)
-        super (RpcController, self).__init__ ()
-
-
+def parse_args ():
+    result = argparse.ArgumentParser (description = 'CherryPy based server')
+    result.add_argument ('--config', '-c', metavar = '<config file>', type = file, default = 'server.conf', help = 'Path to server configuration file')
+    result.add_argument ('--mode', '-m', type = str, choices = ('production', 'debug'), default = 'debug', help = 'Server mode')
+    return result.parse_args ()
 
 if __name__ == '__main__':
-    test = cherrybase.Application (
-        name = 'test',
-        vhosts = ('test.cb.ru:8080', 'www.test.cb.ru:8080'),
-        config = pkg_resources.resource_filename ('app', 'config/debug.conf')
-    )
-    test.tree.add ('/', RootController ())
+    args = parse_args ()
+    server = cherrybase.Server (config = args.config)
 
-    server = cherrybase.Server (
-        applications = [test],
-        config = None,
-        root = MainController ('http://test.cb.ru:8080')
-    )
+    basename = cherrypy.config.get ('server.basename', '127.0.0.1')
+    port = cherrypy.config.get ('server.socket_port', 8080)
+    if port != 80:
+        basename = '{}:{}'.format (basename, port)
+
+    module = __import__ ('app')
+    applications = module.get_applications (args.mode, basename)
+    if isinstance (applications, cherrybase.Application):
+        applications = [applications]
+
+    server.applications += applications
     server.start ()
