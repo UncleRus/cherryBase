@@ -61,12 +61,12 @@ def _create_handler (filename, debug = True):
     return result
 
 
-def create_rotating_log (log = cherrypy.log, debug = True):
+def setup_log (log = cherrypy.log, debug = True):
     log.screen = debug
-    if log.f_error:
+    if hasattr (log, 'f_error') and log.f_error:
         log.error_file = ''
         log.error_log.addHandler (_create_handler (log.f_error, debug))
-    if log.f_access:
+    if hasattr (log, 'f_access') and log.f_access:
         log.access_file = ''
         log.access_log.addHandler (_create_handler (log.f_access, debug))
 

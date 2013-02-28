@@ -12,8 +12,9 @@ class RootController (object):
     @cherrypy.tools.jinja (template = 'index.tpl')
     @use_db ()
     def index (self, db, *args, **kwargs):
-        from pprint import pprint
-        pprint (db.select_all ('select * from cp_site_objects'))
+        app = cherrypy.request.app
+        app.log.error ('***** SOME APP MESSAGE *****', 'test')
+        db.select_all ('select * from cp_site_objects')
         return {
             'who': 'world',
             'ami': 'test'

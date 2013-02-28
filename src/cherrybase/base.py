@@ -74,9 +74,24 @@ class Application (object):
             for path, handler, cfg in routes:
                 self.tree.add (path, handler, cfg)
 
+    def _log_name (self, log_type = 'access'):
+        name = 'log.f_' + log_type
+        cfg = self.app.find_config ('/', name, None)
+        if cfg:
+            return cfg
+        cfg = cherrypy.config.get (name, None)
+        return '{}/{}.{}.log'.format (os.path.dirname (cfg), self.name, log_type) if cfg else None
+
     def prepare (self, debug = True):
         self.app = _cptree.Application (self.tree.root, '', self.config)
-        # FIXME: Лог приложения
+        if not debug:
+            self.app.merge ({
+                '/': {
+                    'log.f_access': self._log_name ('access'),
+                    'log.f_error': self._log_name ('error')
+                }
+            })
+        utils.setup_log (self.app.log, debug)
 
 
 _daemon_conf = ConfigNamespace (
@@ -91,9 +106,10 @@ _daemon_conf = ConfigNamespace (
 _server_conf = ConfigNamespace (
     'server',
     {
+        'pkg_path': os.path.dirname (os.path.dirname (__file__)),
         'packages': [],
         'main_handler': _Stub (),
-        'block_interval': 0.1
+        'block_interval': 0.1,
     }
 )
 

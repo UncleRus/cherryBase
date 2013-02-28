@@ -4,6 +4,7 @@
 import cherrybase, cherrypy
 import argparse
 import logging
+import sys, os
 
 def parse_args ():
     result = argparse.ArgumentParser (description = 'CherryPy based server')
@@ -17,14 +18,20 @@ if __name__ == '__main__':
         'log.f_access': None,
         'log.f_error': None
     })
+    get_conf = cherrypy.config.get
 
     args = parse_args ()
     debug = args.mode == 'debug'
 
     server = cherrybase.Server (config = args.config, debug = debug)
-    get_conf = cherrypy.config.get
 
-    cherrybase.utils.create_rotating_log (debug = debug)
+    cherrybase.utils.setup_log (debug = debug)
+
+    pkg_path = get_conf ('server.pkg_path', os.path.dirname (__file__))
+    if not os.path.exists (pkg_path):
+        raise RuntimeError ('Invalid server packages path (server.pkg_path): {}'.format (pkg_path))
+    if pkg_path not in sys.path:
+        sys.path.append (pkg_path)
 
     basename = get_conf ('server.basename', get_conf ('server.socket_host', '127.0.0.1'))
     port = get_conf ('server.socket_port', 8080)
@@ -47,6 +54,6 @@ if __name__ == '__main__':
         server.applications += applications
 
     if not server.applications:
-        cherrypy.log.error ('No packages was found', 'SERVER', logging.FATAL)
+        cherrypy.log.error ('No app packages were found', 'SERVER', logging.FATAL)
     else:
         server.start ()

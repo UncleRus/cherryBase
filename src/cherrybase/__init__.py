@@ -18,5 +18,5 @@ toolbox.jinja = JinjaTool ()
 from tools.auth import AuthTool
 toolbox.auth = AuthTool ()
 
-from base import Application, Server
+from base import Application, Server, _server_conf as server_conf
 
