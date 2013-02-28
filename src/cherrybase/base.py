@@ -86,7 +86,7 @@ _daemon_conf = ConfigNamespace (
 _server_conf = ConfigNamespace (
     'server',
     {
-        'applications': [],
+        'packages': [],
         'main_handler': _Stub (),
         'block_interval': 0.1
     }
