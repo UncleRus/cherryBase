@@ -1,12 +1,19 @@
 # -*- coding: utf-8 -*-
 
 import cherrypy
+from cherrybase import db
+
+def use_db (*args, **kwargs):
+    return db.use_db ('test', *args, **kwargs)
 
 class RootController (object):
 
     @cherrypy.expose
     @cherrypy.tools.jinja (template = 'index.tpl')
-    def index (self, *args, **kwargs):
+    @use_db ()
+    def index (self, db, *args, **kwargs):
+        from pprint import pprint
+        pprint (db.select_all ('select * from cp_site_objects'))
         return {
             'who': 'world',
             'ami': 'test'
