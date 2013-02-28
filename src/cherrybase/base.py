@@ -5,7 +5,7 @@ import os, logging
 from uuid import uuid1
 from cherrybase.conf import ConfigNamespace
 from cherrypy import _cptree, _cpconfig, _cpwsgi
-
+from . import utils
 
 class _Stub (object):
     pass
@@ -69,9 +69,14 @@ class Application (object):
         self.vhosts = vhosts or [self.name]
         self.tree = ApplicationTree (self.name)
         self.config = config
+        self.app = None
         if routes:
             for path, handler, cfg in routes:
                 self.tree.add (path, handler, cfg)
+
+    def prepare (self, debug = True):
+        self.app = _cptree.Application (self.tree.root, '', self.config)
+        # FIXME: Лог приложения
 
 
 _daemon_conf = ConfigNamespace (
@@ -95,15 +100,17 @@ _server_conf = ConfigNamespace (
 
 class Server (object):
 
-    def __init__ (self, applications = None, config = None):
+    def __init__ (self, applications = None, config = None, debug = True):
         self.applications = applications or []
+        self.debug = debug
         if config:
             cherrypy.config.update (config)
 
     def start (self):
         vhosts = {}
         for app in self.applications:
-            vhosts.update ({host: _cptree.Application (app.tree.root, '', app.config) for host in app.vhosts})
+            app.prepare (self.debug)
+            vhosts.update ({host: app.app for host in app.vhosts})
 
         self.daemonize ()
 

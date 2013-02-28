@@ -19,10 +19,12 @@ if __name__ == '__main__':
     })
 
     args = parse_args ()
-    server = cherrybase.Server (config = args.config)
+    debug = args.mode == 'debug'
+
+    server = cherrybase.Server (config = args.config, debug = debug)
     get_conf = cherrypy.config.get
 
-    cherrybase.utils.create_rotating_log (debug = args.mode == 'debug')
+    cherrybase.utils.create_rotating_log (debug = debug)
 
     basename = get_conf ('server.basename', get_conf ('server.socket_host', '127.0.0.1'))
     port = get_conf ('server.socket_port', 8080)
