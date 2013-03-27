@@ -127,6 +127,7 @@ class Server (object):
         for app in self.applications:
             app.prepare (self.debug)
             vhosts.update ({host: app.app for host in app.vhosts})
+            cherrypy.log.error ('Application {} virtual hosts: {}'.format (app.name, [host for host in app.vhosts]), 'SERVER')
 
         self.daemonize ()
 

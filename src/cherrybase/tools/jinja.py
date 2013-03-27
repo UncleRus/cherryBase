@@ -24,9 +24,8 @@ class JinjaHandler (cherrypy.dispatch.LateParamPageHandler):
         tpl_globals.update ({'cherrypy': cherrypy})
         self.env.globals.update (tpl_globals)
 
-        template = response.get ('__template__', getattr (cherrypy.serving.request, '_jinja_template', self.template))
-        response ['__template__'] = template
-        return self.env.get_template (template).render (response)
+        response ['__template__'] = response.get ('__template__', getattr (cherrypy.serving.request, '_jinja_template', self.template))
+        return self.env.get_template (response ['__template__']).render (response)
 
 
 class JinjaTool (Tool):

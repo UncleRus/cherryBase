@@ -29,7 +29,8 @@ if __name__ == '__main__':
 
     pkg_path = get_conf ('server.pkg_path', os.path.dirname (__file__))
     if not os.path.exists (pkg_path):
-        raise RuntimeError ('Invalid server packages path (server.pkg_path): {}'.format (pkg_path))
+        cherrypy.log.error ('Invalid server packages path (server.pkg_path): {}'.format (pkg_path), 'SERVER', logging.FATAL)
+        sys.exit (1)
     if pkg_path not in sys.path:
         sys.path.append (pkg_path)
 
@@ -38,7 +39,7 @@ if __name__ == '__main__':
     if port != 80:
         basename = '{}:{}'.format (basename, port)
 
-    if args.pid != None:
+    if not debug and args.pid != None:
         cherrypy.config.update ({
             'daemon.on': True,
             'daemon.pid_file': args.pid
@@ -53,7 +54,4 @@ if __name__ == '__main__':
         cherrypy.log.error ('Applications found: {}'.format ([app.name for app in applications]), 'SERVER')
         server.applications += applications
 
-    if not server.applications:
-        cherrypy.log.error ('No app packages were found', 'SERVER', logging.FATAL)
-    else:
-        server.start ()
+    server.start ()

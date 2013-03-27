@@ -20,7 +20,7 @@ def get_applications (mode, basename):
     db.catalog ['test'] = db.drivers.PgSql (
         host = get_conf_global ('db_host', '127.0.0.1'),
         port = get_conf_global ('db_port', '5432'),
-        dbname = get_conf_global ('db_name', 'cherrypack'),
+        dbname = get_conf_global ('db_name', ''),
         user = get_conf_global ('db_user', 'postgres'),
         password = get_conf_global ('db_password', 'secret')
     )

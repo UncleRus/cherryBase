@@ -15,7 +15,7 @@ toolbox.gpg_out = GpgOut ()
 from tools.jinja import JinjaTool
 toolbox.jinja = JinjaTool ()
 
-from tools.auth import AuthTool
+from tools.auth import AuthTool, BaseUser, AuthController
 toolbox.auth = AuthTool ()
 
 from base import Application, Server, _server_conf as server_conf
