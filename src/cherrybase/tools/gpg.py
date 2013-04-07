@@ -36,18 +36,18 @@ class Encoder (object):
     '''
     Обертка для GPG
     '''
-    def __init__ (self, homedir, keyFingerprint, keyPassword):
-        self._key = keyFingerprint
-        self._password = keyPassword
+    def __init__ (self, homedir, key_fingerprint, key_password):
+        self._key = key_fingerprint
+        self._password = key_password
         self._gpg = ExtGPG (gnupghome = homedir)
         # self._gpg.verbose = True
 
-    def _checkResult (self, result):
+    def _check_result (self, result):
         if getattr (result, 'ok', False):
             return
         raise RuntimeError ('\n'.join ([line for line in getattr (result, 'stderr', 'gpg: {}'.format (getattr (result, 'status', 'Unknown error'))).splitlines () if line.startswith ('gpg: ')]))
 
-    def publicKeyExists (self, key):
+    def public_key_exists (self, key):
         if len (key) < 8:
             return False
         key = key.upper ()
@@ -56,15 +56,15 @@ class Encoder (object):
                 return True
         return False
 
-    def encode (self, data, recipientKey):
+    def encode (self, data, recipient_key):
         result = self._gpg.encrypt (
             data,
-            recipientKey,
+            recipient_key,
             sign = self._key,
             passphrase = self._password,
             always_trust = True
         );
-        self._checkResult (result);
+        self._check_result (result);
         return str (result)
 
     def decode (self, encoded, correspondentKey):
@@ -74,7 +74,7 @@ class Encoder (object):
             passphrase = self._password,
             always_trust = True
         )
-        self._checkResult (result)
+        self._check_result (result)
         return str (result)
 
 
@@ -100,7 +100,7 @@ class GpgIn (Tool):
             keyFingerprint = request._gpg_key,
             keyPassword = request._gpg_password
         )
-        if not encoder.publicKeyExists (request._gpg_client_key):
+        if not encoder.public_key_exists (request._gpg_client_key):
             raise Exception ('Invalid key')
         encoded = entity.fp.read ()
         decoded = encoder.decode (encoded, request._gpg_client_key)
@@ -148,11 +148,11 @@ class GpgOut (HandlerWrapperTool):
     Шифровальщик выходных данных
     '''
     def __init__ (self):
-        HandlerWrapperTool.__init__ (self, self.run, point = 'before_handler', name = 'gpg_out', priority = 10)
+        super (GpgOut, self).__init__ (self.run, point = 'before_handler', name = 'gpg_out', priority = 10)
 
     def callable (self, content_type = 'application/pgp-encrypted'):
         cherrypy.serving.request._gpg_out_ct = content_type
-        HandlerWrapperTool.callable (self)
+        super (GpgOut, self).callable ()
 
     def run (self, nextHandler, *args, **kwargs):
         request = cherrypy.serving.request
@@ -161,7 +161,7 @@ class GpgOut (HandlerWrapperTool):
             keyFingerprint = request._gpg_key,
             keyPassword = request._gpg_password
         )
-        if not encoder.publicKeyExists (request._gpg_client_key):
+        if not encoder.public_key_exists (request._gpg_client_key):
             raise Exception ('Invalid key')
         try:
             response = nextHandler (*args, **kwargs)
