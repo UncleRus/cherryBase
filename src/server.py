@@ -26,6 +26,7 @@ if __name__ == '__main__':
     server = cherrybase.Server (config = args.config, debug = debug)
 
     cherrybase.utils.setup_log (debug = debug)
+    cherrypy.log.screen = debug
 
     pkg_path = get_conf ('server.pkg_path', os.path.dirname (__file__))
     if not os.path.exists (pkg_path):

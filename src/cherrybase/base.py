@@ -121,6 +121,7 @@ class Server (object):
         self.debug = debug
         if config:
             cherrypy.config.update (config)
+        cherrypy.config.update ({'debug': debug})
 
     def start (self):
         vhosts = {}

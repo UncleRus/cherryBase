@@ -62,7 +62,6 @@ def _create_handler (filename, debug = True):
 
 
 def setup_log (log = cherrypy.log, debug = True):
-    log.screen = debug
     if hasattr (log, 'f_error') and log.f_error:
         log.error_file = ''
         log.error_log.addHandler (_create_handler (log.f_error, debug))
@@ -87,3 +86,60 @@ class Log (object):
         if traceback:
             msg += cherrypy._cperror.format_exc ()
         self._logger.log (severity, ' '.join ((cherrypy.log.time (), context, msg)))
+
+
+class PoolsCatalog (object):
+
+    def __init__ (self, log_context):
+        self.pools = {}
+        self.objects = {}
+        self.log_context = log_context
+        cherrypy.engine.subscribe ('start_thread', self._start_thread)
+        cherrypy.engine.subscribe ('stop_thread', self._stop_thread)
+
+    def _start_thread (self, thread_index):
+        cherrypy.thread_data.index = thread_index
+        self.objects [thread_index] = {}
+
+    def _stop_thread (self, thread_index):
+        if thread_index not in self.objects:
+            return
+        for name, object in self.objects [thread_index].items ():
+            try:
+                self.pools [name].put (object)
+            except:
+                cherrypy.log.error (
+                    'An error occured when freeing {}.{} object'.format (thread_index, name),
+                    context = self.log_context,
+                    severity = logging.WARNING,
+                    traceback = True
+                )
+        del self.objects [thread_index]
+
+    def __iter__ (self):
+        return iter (self.pools)
+
+    def __contains__ (self, name):
+        return name in self.pools
+
+    def __setitem__ (self, name, pool):
+        if name in self.pools:
+            if self.pools [name] == pool:
+                return
+            raise ValueError ('Pool {} alredy defined'.format (name))
+        self.pools [name] = pool
+
+    def __getitem__ (self, name):
+        return self.pools [name]
+
+    def get (self, name):
+        if name not in self.pools:
+            raise ValueError ('Unknown pool {}'.format (name))
+        objects = self.objects [cherrypy.thread_data.index]
+        if name not in objects:
+            objects [name] = self.pools [name].get ()
+        return objects [name]
+
+    def put (self, name, obj):
+        self.pools [name].put (obj)
+
