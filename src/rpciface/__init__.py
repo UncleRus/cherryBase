@@ -18,7 +18,7 @@ def get_applications (mode, basename):
 
     # Возвращаем экземпляр приложения или список экземпляров
     return Application (
-        name = 'test',
+        name = __name__,# 'rpciface',
         vhosts = [vhost + basename if vhost [-1] == '.' else vhost for vhost in _vhosts],
         config = config,
         routes = (

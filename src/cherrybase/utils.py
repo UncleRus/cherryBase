@@ -96,6 +96,7 @@ class PoolsCatalog (object):
         self.log_context = log_context
         cherrypy.engine.subscribe ('start_thread', self._start_thread)
         cherrypy.engine.subscribe ('stop_thread', self._stop_thread)
+        self._start_thread (-1)
 
     def _start_thread (self, thread_index):
         cherrypy.thread_data.index = thread_index
@@ -135,7 +136,7 @@ class PoolsCatalog (object):
     def get (self, name):
         if name not in self.pools:
             raise ValueError ('Unknown pool {}'.format (name))
-        objects = self.objects [cherrypy.thread_data.index]
+        objects = self.objects [getattr (cherrypy.thread_data, 'index', -1)]
         if name not in objects:
             objects [name] = self.pools [name].get ()
         return objects [name]
