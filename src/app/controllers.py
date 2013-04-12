@@ -16,9 +16,8 @@ class RootController (object):
 
     @use_orm ()
     def __init__ (self, session):
-        #metadata = session.
-        #self.site_objects = sas.Table ('cp_site_objects', meta)
-        print session
+        metadata = sas.MetaData (bind = session.bind)
+        self.site_objects = sas.Table ('cp_site_objects', metadata, autoload = True)
 
     @cherrypy.expose
     @cherrypy.tools.jinja (template = 'index.tpl')
@@ -28,6 +27,8 @@ class RootController (object):
         app = cherrypy.request.app
         app.log.error ('***** SOME APP MESSAGE *****', 'test')
         db.select_all ('select * from cp_site_objects')
+        for so in session.query (self.site_objects).order_by (self.site_objects._columns.rn):
+            print so
         print 'Raw output', session
         return {
             'who': 'world',
