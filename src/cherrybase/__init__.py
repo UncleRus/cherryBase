@@ -4,9 +4,9 @@ __version__ = '0.1.0'
 
 import cherrypy
 
-from . import base, rpc, tasks, utils, tools
+from . import base, rpc, bgtasks, utils, tools
 
-cherrypy.engine.bg_tasks_queue = tasks.TasksQueue (cherrypy.engine)
+cherrypy.engine.bg_tasks_queue = bgtasks.TasksQueue (cherrypy.engine)
 
 toolbox = cherrypy.tools
 
