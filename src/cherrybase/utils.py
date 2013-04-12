@@ -127,7 +127,7 @@ class PoolsCatalog (object):
         if name in self.pools:
             if self.pools [name] == pool:
                 return
-            raise ValueError ('Pool {} alredy defined'.format (name))
+            raise ValueError ('Duplicate pool {}'.format (name))
         self.pools [name] = pool
 
     def __getitem__ (self, name):
