@@ -19,11 +19,7 @@ def get_applications (mode, basename):
         return config.get ('/', {}).get (entry, default)
 
     # Добавляем в каталог пулов БД нашу
-<<<<<<< HEAD
     db.catalog ['test'] = PgSql (
-=======
-    db.catalog ['test'] = db.drivers.pgsql.PgSql (
->>>>>>> refs/remotes/origin/master
         host = get_conf_global ('db_host', '127.0.0.1'),
         port = get_conf_global ('db_port', '5432'),
         dbname = get_conf_global ('db_name', ''),

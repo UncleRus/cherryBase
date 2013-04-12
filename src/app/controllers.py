@@ -28,11 +28,7 @@ class RootController (object):
         app = cherrypy.request.app
         app.log.error ('***** SOME APP MESSAGE *****', 'test')
         db.select_all ('select * from cp_site_objects')
-<<<<<<< HEAD
         print 'Raw output', session
-=======
-        print 'Raw output'
->>>>>>> refs/remotes/origin/master
         return {
             'who': 'world',
             'ami': 'test'
