@@ -28,6 +28,8 @@ if __name__ == '__main__':
     cherrybase.utils.setup_log (debug = debug)
     cherrypy.log.screen = debug
 
+    cherrybase.tasks.TasksQueue (cherrypy.engine).subscribe ()
+
     pkg_path = get_conf ('server.pkg_path', os.path.dirname (__file__))
     if not os.path.exists (pkg_path):
         cherrypy.log.error ('Invalid server packages path (server.pkg_path): {}'.format (pkg_path), 'SERVER', logging.FATAL)

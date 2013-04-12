@@ -11,6 +11,7 @@ encoding//src/cherrybase/db/drivers/pgsql.py=utf-8
 encoding//src/cherrybase/forms/base.py=utf-8
 encoding//src/cherrybase/forms/controls.py=utf-8
 encoding//src/cherrybase/orm/__init__.py=utf-8
+encoding//src/cherrybase/orm/drivers/alchemy.py=utf-8
 encoding//src/cherrybase/rpc.py=utf-8
 encoding//src/cherrybase/tasks.py=utf-8
 encoding//src/cherrybase/tools/auth.py=utf-8
