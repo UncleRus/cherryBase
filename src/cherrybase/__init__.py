@@ -6,6 +6,8 @@ import cherrypy
 
 from . import base, rpc, tasks, utils, tools
 
+cherrypy.engine.bg_tasks_queue = tasks.TasksQueue (cherrypy.engine)
+
 toolbox = cherrypy.tools
 
 from tools.gpg import GpgIn, GpgOut

@@ -29,6 +29,7 @@ class RootController (object):
         db.select_all ('select * from cp_site_objects')
         for so in session.query (self.site_objects).order_by (self.site_objects._columns.rn):
             print so
+
         print 'Raw output', session
         return {
             'who': 'world',

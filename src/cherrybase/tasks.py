@@ -44,3 +44,4 @@ class TasksQueue (SimplePlugin):
 
     def put (self, task, *args, **kwargs):
         self.queue.put ((task, args, kwargs))
+
