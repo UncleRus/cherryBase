@@ -40,7 +40,7 @@ class _Connection (psycopg2.extensions.connection):
 
 class PgSql (object):
 
-    def __init__ (self, host = '127.0.0.1', port = '5432', dbname = 'postgres', user = 'postgres',
+    def __init__ (self, host = '127.0.0.1', port = 5432, dbname = 'postgres', user = 'postgres',
                 password = '', encoding = 'utf8', min_connections = 0, max_connections = 40):
 
         from psycopg2 import pool

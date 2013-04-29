@@ -122,6 +122,33 @@ class Server (object):
         if config:
             cherrypy.config.update (config)
         cherrypy.config.update ({'debug': debug})
+        # настраиваем логи
+        utils.setup_log (debug = self.debug)
+        cherrypy.log.screen = self.debug
+
+    def scan_applications (self):
+        import sys
+
+        pkg_path = cherrypy.config.get ('server.pkg_path', None)
+        if not pkg_path or not os.path.exists (pkg_path):
+            cherrypy.log.error ('Invalid server packages path (server.pkg_path): {}'.format (pkg_path), 'SERVER', logging.FATAL)
+            raise ValueError ('Undefined server.pkg_path')
+        if pkg_path not in sys.path:
+            sys.path.append (pkg_path)
+
+        basename = cherrypy.config.get ('server.basename', cherrypy.config.get ('server.socket_host', '127.0.0.1'))
+        port = cherrypy.config.get ('server.socket_port', 8080)
+        if port != 80:
+            basename = '{}:{}'.format (basename, port)
+
+        for pkg_name in cherrypy.config.get ('server.packages', []):
+            cherrypy.log.error ('Importing package "{}"'.format (pkg_name), 'SERVER')
+            module = __import__ (pkg_name)
+            applications = module.get_applications ('debug' if self.debug else 'production', basename)
+            if isinstance (applications, Application):
+                applications = [applications]
+            cherrypy.log.error ('Applications found: {}'.format ([app.name for app in applications]), 'SERVER')
+            self.applications += applications
 
     def start (self):
         vhosts = {}
@@ -143,6 +170,9 @@ class Server (object):
             cherrypy.engine.signal_handler.subscribe ()
         cherrypy.engine.start ()
         cherrypy.engine.block ()
+
+    def stop (self):
+        cherrypy.engine.stop ()
 
     def daemonize (self):
         if not _daemon_conf.on:
