@@ -8,7 +8,7 @@ class Element (object):
     '''
     def __init__ (self, name, owner = None):
         self.name = name
-        self.children = set ()
+        self.children = []
         self.owner = owner
         self.valid = True
 
@@ -19,10 +19,14 @@ class Element (object):
     @owner.setter
     def owner (self, value):
         if getattr (self, '_owner', None):
-            self._owner.children.discard (self)
+            self._owner.children [:] = [child for child in self._owner.children if child != self]
         self._owner = value
         if self._owner:
             self._owner.children.add (self)
+
+    def convert (self):
+        for element in self.children:
+            element.convert ()
 
     def check (self):
         self.valid = True
@@ -39,11 +43,17 @@ class Control (Element):
         super (Control, self).__init__ (name, owner)
         self.default = default
         self.rules = []
+        self.converters = []
         self.errors = []
         self._load_value ()
 
     def _load_value (self):
         self.value = cherrypy.request.params.get (self.name, self.default)
+
+    def convert (self):
+        super (Control, self).convert ()
+        for converter in self.converters:
+            self.value = converter (self.value)
 
     def check (self):
         super (Control, self).check ()
