@@ -8,6 +8,7 @@ class _Connection (psycopg2.extensions.connection):
 
     def __init__ (self, dsn, async = 0):
         psycopg2.extensions.connection.__init__ (self, dsn, async)
+        psycopg2.extensions.register_type (psycopg2.extensions.UNICODE)
         self.set_client_encoding (self._encoding)
         self.cursor ().execute ('set bytea_output to escape')
         self.commit ()
@@ -66,5 +67,5 @@ class PgSql (object):
         result.rollback ()
         return result
 
-    def free (self, connection):
+    def put (self, connection):
         self._pool.putconn (connection)
