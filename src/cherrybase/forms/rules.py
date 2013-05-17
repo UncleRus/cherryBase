@@ -28,9 +28,9 @@ class Regexp (Rule):
     def __init__ (self, control, pattern = email_pattern, flags = re.UNICODE + re.IGNORECASE, message = u'Invalid value'):
         super (Regexp, self).__init__ (control, message)
         if pattern == int_pattern:
-            self.control.converters.add (to_int)
+            self.control.converters.append (to_int)
         elif pattern == numeric_pattern:
-            self.control.converters.add (lambda x: to_type (float, x, 0.0))
+            self.control.converters.append (lambda x: to_type (float, x, 0.0))
         self._regexp = re.compile (pattern, flags)
 
     def __call__ (self):
