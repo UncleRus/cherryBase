@@ -7,6 +7,7 @@ class Element (object):
     Базовый класс элемента формы
     '''
     def __init__ (self, name, owner = None):
+        self._owner = None
         self.name = name
         self.children = []
         self.owner = owner
@@ -18,11 +19,13 @@ class Element (object):
 
     @owner.setter
     def owner (self, value):
-        if getattr (self, '_owner', None):
+        if self._owner == value:
+            return
+        if self._owner:
             self._owner.children [:] = [child for child in self._owner.children if child != self]
         self._owner = value
         if self._owner:
-            self._owner.children.add (self)
+            self._owner.children.append (self)
 
     def convert (self):
         for element in self.children:
