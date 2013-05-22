@@ -158,8 +158,8 @@ class GpgOut (HandlerWrapperTool):
         request = cherrypy.serving.request
         encoder = Encoder (
             homedir = request._gpg_homedir,
-            keyFingerprint = request._gpg_key,
-            keyPassword = request._gpg_password
+            key_fingerprint = request._gpg_key,
+            key_password = request._gpg_password
         )
         if not encoder.public_key_exists (request._gpg_client_key):
             raise Exception ('Invalid key')
