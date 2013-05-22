@@ -66,6 +66,7 @@ class Controller (object):
 
     def default (self, *vpath, **params):
         '''Обработчик по умолчанию'''
+        cherrypy.request.body.fp.bytes_read = 0
         rpc_params, rpc_method = xmlrpcutil.process_body ()
         if rpc_method == 'ERRORMETHOD':
             raise Exception ('Request is empty')

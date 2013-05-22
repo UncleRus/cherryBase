@@ -97,8 +97,8 @@ class GpgIn (Tool):
         request = cherrypy.serving.request
         encoder = Encoder (
             homedir = request._gpg_homedir,
-            keyFingerprint = request._gpg_key,
-            keyPassword = request._gpg_password
+            key_fingerprint = request._gpg_key,
+            key_password = request._gpg_password
         )
         if not encoder.public_key_exists (request._gpg_client_key):
             raise Exception ('Invalid key')
@@ -108,7 +108,7 @@ class GpgIn (Tool):
             request.headers,
             {
                 'Content-Length': len (decoded),
-                'Content-Type': request._gpg_target_ct if request._gpg_target_ct != None else entity.content_type
+                'Content-Type': request._gpg_target_ct if request._gpg_target_ct != None else str (entity.content_type)
             }
         )
         request.body = RequestBody (
@@ -120,8 +120,8 @@ class GpgIn (Tool):
             request.headers,
             request_params = request.params
         )
-        if request.process_request_body:
-            request.body.process ()
+        #if request.process_request_body:
+        #    request.body.process ()
 
     def run (self, homedir, key, password, content_types = 'application/pgp-encrypted', force = False, target_ct = None):
         request = cherrypy.serving.request
