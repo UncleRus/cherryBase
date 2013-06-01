@@ -51,11 +51,12 @@ class JinjaTool (Tool):
             finalize = lambda x: '' if x is None else x
         )
 
-    def run (self, template = None, loader = None, **kwargs):
+    def run (self, template = None, loader = None, newline_sequence = '\n'):
         request = cherrypy.serving.request
         if not template:
             path = unicode (request.path_info).strip ('/')
             template = '{0}.tpl'.format (path) if path else 'index.tpl'
-        self.env.loader = loader if loader else jinja2.FileSystemLoader ('')
+        self.env.loader = loader or jinja2.FileSystemLoader ('')
+        self.env.newline_sequence = newline_sequence
         request.jinja_env = self.env
         request.handler = JinjaHandler (cherrypy.request.handler, self.env, template)
