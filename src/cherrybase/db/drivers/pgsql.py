@@ -63,9 +63,7 @@ class PgSql (object):
         )
 
     def get (self):
-        result = self._pool.getconn ()
-        result.rollback ()
-        return result
+        return self._pool.getconn ()
 
     def put (self, connection):
         self._pool.putconn (connection)
