@@ -1,7 +1,17 @@
 # -*- coding: utf-8 -*-
 
-import MySQLdb
 import threading
+
+
+try:
+    import mysql.connector
+    connector = mysql.connector.Connect
+except ImportError as e:
+    try:
+        import MySQLdb
+        connector = MySQLdb.connect
+    except ImportError as e:
+        raise ImportError ('No suitable MySQL packages found')
 
 
 class PoolError (Exception):
@@ -27,7 +37,7 @@ class MySql (object):
         self._thread = thread
 
     def _connect (self, key = None):
-        connection = MySQLdb.connect (*self._args, **self._kwargs)
+        connection = connector (*self._args, **self._kwargs)
         if key is not None:
             self._used [key] = connection
         else:
