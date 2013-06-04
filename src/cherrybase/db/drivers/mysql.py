@@ -71,4 +71,3 @@ class MySql (object):
         finally:
             self._lock.release ()
 
-
