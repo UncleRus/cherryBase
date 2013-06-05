@@ -35,7 +35,6 @@ class PoolError (Exception):
 class ThreadedPool (object):
 
     def __init__ (self, connector, min_connections, max_connections, **kwargs):
-        print kwargs
         self.min_connections = min_connections
         self.max_connections = max_connections
         self.connector = connector
