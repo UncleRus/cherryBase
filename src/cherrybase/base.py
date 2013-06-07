@@ -198,7 +198,7 @@ class Server (object):
             uid = None
             gid = None
 
-        DropPrivileges (cherrypy.engine, uid = uid, gid = gid).subscribe ()
+        cherrypy.drop_privileges = DropPrivileges (cherrypy.engine, uid = uid, gid = gid).subscribe ()
         if _daemon_conf.pid_file:
             PIDFile (cherrypy.engine, _daemon_conf.pid_file).subscribe ()
         Daemonizer (cherrypy.engine).subscribe ()

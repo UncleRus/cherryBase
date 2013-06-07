@@ -7,6 +7,7 @@ import cherrypy
 from . import base, rpc, bgtasks, utils, tools
 
 cherrypy.engine.bg_tasks_queue = bgtasks.TasksQueue (cherrypy.engine)
+cherrypy.engine.cron = bgtasks.Cron (cherrypy.engine)
 
 toolbox = cherrypy.tools
 

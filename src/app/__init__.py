@@ -1,8 +1,14 @@
 # -*- coding: utf-8 -*-
 
 from . import controllers
+import cherrypy
 
 _vhosts = ('test.', 'www.test.')
+
+import time
+
+def test_bg_job ():
+    cherrypy.log.error ('Test background job is running!', 'test_bg_job')
 
 def get_applications (mode, basename):
     from cherrypy import _cpconfig
@@ -28,6 +34,9 @@ def get_applications (mode, basename):
     )
 
     orm.catalog ['test'] = SqlAlchemy ('test')
+
+    engine = cherrypy.engine
+    engine.cron.add ('test', test_bg_job, 60)
 
     # Возвращаем экземпляр приложения или список экземпляров
     return Application (
