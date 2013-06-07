@@ -21,11 +21,11 @@ def use_orm (pool_name = 'default', autocommit = True, position = 1):
                     try:
                         session.flush ()
                         session.commit ()
-                        return result
                     except:
                         session.rollback ()
                         session.expunge_all ()
                         raise
+                return result
             except:
                 session.rollback ()
                 session.expunge_all ()
