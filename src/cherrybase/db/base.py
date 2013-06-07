@@ -65,13 +65,13 @@ class ThreadedPool (object):
         if self._pool:
             self._used [key] = self._pool.pop ()
             return self._used [key]
-        if len (self._used) == self.maxconn:
+        if len (self._used) == self.max_connections:
             raise PoolError ('Connection pool exausted')
         return self._connect (key)
 
     def _putconn (self, connection):
         key = self._thread.get_ident ()
-        if len (self._pool) < self.minconn:
+        if len (self._pool) < self.min_connections:
             self._pool.append (connection)
             if key in self._used:
                 del self._used [key]

@@ -133,6 +133,9 @@ class PoolsCatalog (object):
     def __getitem__ (self, name):
         return self.pools [name]
 
+    def __repr__ (self):
+        return '<PoolsCatalog({})>'.format (self.pools)
+
     def get (self, name):
         if name not in self.pools:
             raise ValueError ('Unknown pool {}'.format (name))
