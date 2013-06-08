@@ -47,7 +47,7 @@ class TasksQueue (SimplePlugin):
         self.queue.put ((task, args, kwargs))
 
 
-class Cron (SimplePlugin):
+class TaskManager (SimplePlugin):
 
     def __init__ (self, bus):
         SimplePlugin.__init__ (self, bus)
@@ -59,17 +59,15 @@ class Cron (SimplePlugin):
         self.started = True
         for timer in [timer for timer in self._timers.values () if timer.finished]:
             timer.start ()
-        self.bus.log ('Started Cron')
+        self.bus.log ('Started TaskManager')
 
     def stop (self):
         self.clear ()
-        self.bus.log ('Stopped Cron')
+        self.bus.log ('Stopped TaskManager')
         self.started = False
 
     def _run_task (self, code, interval, *args, **kwargs):
         if code not in self._tasks:
-            if code in self._timers:
-                del self._timers [code]
             return
         self._timers [code] = Timer (interval, self._run_task, [code, interval] + list (args), kwargs)
         self._timers [code].start ()
