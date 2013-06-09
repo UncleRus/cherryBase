@@ -10,10 +10,10 @@ from . import utils
 def _on_error (*args, **kwargs):
     e = sys.exc_info ()[1]
     if hasattr (e, 'args') and len (e.args) > 1:
-        message = e.args [0]
+        message = unicode (e.args [0])
         code = utils.to_int (e.args [1], 1)
     else:
-        message = str (e)
+        message = unicode (e)
         code = 1
     xmlrpclib = xmlrpcutil.get_xmlrpclib ()
     xmlrpcutil._set_response (xmlrpclib.dumps (xmlrpclib.Fault (code, message)))
@@ -82,6 +82,10 @@ class Controller (object):
                 return None
         return result if getattr (result, '__rpc_exposed', False) else None
 
+    def _call_method (self, method, name, args, vpath = None, parameters = None):
+        '''Можно перекрыть в наследнике и переопределить поаедение, например, проверить права и т.п.'''
+        return method (*args)
+
     def default (self, *vpath, **params):
         '''Обработчик по умолчанию'''
         cherrypy.request.body.fp.bytes_read = 0
@@ -91,7 +95,7 @@ class Controller (object):
 
         method = self._find_method (rpc_method)
         if method:
-            body = method (*rpc_params, **params)
+            body = self._call_method (method, rpc_method, rpc_params, vpath, params)
         else:
             raise Exception ('Method "{}" not found'.format (rpc_method), -32601)
 

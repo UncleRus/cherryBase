@@ -12,5 +12,6 @@ class TestLibrary (object):
 class Root (rpc.Controller):
 
     def __init__ (self, *args, **kwargs):
+        self._cp_config ['tools.xmlrpc.allow_none'] = True
         self.test = TestLibrary ()
         super (Root, self).__init__ (*args, **kwargs)
