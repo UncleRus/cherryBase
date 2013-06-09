@@ -36,7 +36,7 @@ def get_applications (mode, basename):
     orm.catalog ['test'] = SqlAlchemy ('test')
 
     engine = cherrypy.engine
-    engine.task_manager.add ('test', test_bg_job, 1)
+    engine.task_manager.add ('test', test_bg_job, 60)
 
     # Возвращаем экземпляр приложения или список экземпляров
     return Application (
