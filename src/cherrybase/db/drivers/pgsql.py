@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import psycopg2.extras
+import psycopg2.pool
 from ..base import ShortcutsMixin
 
 class _Connection (psycopg2.extensions.connection, ShortcutsMixin):
@@ -23,12 +24,10 @@ class PgSql (object):
     def __init__ (self, host = '127.0.0.1', port = 5432, dbname = 'postgres', user = 'postgres',
                 password = '', encoding = 'utf8', min_connections = 0, max_connections = 40):
 
-        from psycopg2 import pool
-
         class _EConnection (_Connection):
             _encoding = encoding
 
-        self._pool = pool.ThreadedConnectionPool (
+        self._pool = psycopg2.pool.ThreadedConnectionPool (
             min_connections,
             max_connections,
             'host={host} port={port} dbname={dbname} user={user} password={password}'.format (
