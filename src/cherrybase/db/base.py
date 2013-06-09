@@ -27,6 +27,24 @@ def use_db (pool_name = 'default', autocommit = True, position = 1):
     return _wrap
 
 
+class ShortcutsMixin (object):
+
+    def __execute (self, sql, args):
+        cursor = self.cursor ()
+        cursor.execute (sql, args)
+        return cursor
+
+    def select_row (self, sql, args = None):
+        return self.__execute (sql, args).fetchone ()
+
+    def select_value (self, sql, args = None):
+        row = self.__execute (sql, args).fetchone ()
+        return row [0] if row else None
+
+    def select_all (self, sql, args = None):
+        return self.__execute (sql, args).fetchall ()
+
+
 import threading
 
 class PoolError (Exception):
