@@ -1,36 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import gnupg, os
+import gnupg
 import cherrypy
 from cherrypy._cptools import Tool, HandlerWrapperTool
 from cherrypy._cpcompat import ntou
 from cherrypy._cpreqbody import RequestBody, SizedReader
 from cStringIO import StringIO
-
-
-class ExtGPG (gnupg.GPG):
-    '''
-    Расширение класса gnupg.GPG
-    '''
-    def decrypt_verify_file (self, file, encoder_key, always_trust = False, passphrase = None, output = None):
-        args = ["--decrypt", "-u", encoder_key]
-        if output:
-            if os.path.exists (output):
-                os.remove (output)
-            args.append ('--output "%s"' % output)
-        if always_trust:
-            args.append ("--always-trust")
-        result = self.result_map ['crypt'](self)
-        self._handle_io (args, file, result, passphrase, binary = True)
-        gnupg.logger.debug ('decrypt result: %r', result.data)
-        return result
-
-    def decrypt_verify (self, message, encoder_key, **kwargs):
-        data = gnupg._make_binary_stream (message, self.encoding)
-        result = self.decrypt_verify_file (data, encoder_key, **kwargs)
-        data.close ()
-        return result
-
 
 class Encoder (object):
     '''
@@ -39,7 +14,7 @@ class Encoder (object):
     def __init__ (self, homedir, key_fingerprint, key_password):
         self._key = key_fingerprint
         self._password = key_password
-        self._gpg = ExtGPG (gnupghome = homedir)
+        self._gpg = gnupg.GPG (gnupghome = homedir)
         # self._gpg.verbose = True
 
     def _check_result (self, result):
@@ -104,13 +79,10 @@ class GpgIn (Tool):
             raise Exception ('Invalid key')
         encoded = entity.fp.read ()
         decoded = encoder.decode (encoded, request._gpg_client_key)
-        dict.update (
-            request.headers,
-            {
-                'Content-Length': len (decoded),
-                'Content-Type': request._gpg_target_ct if request._gpg_target_ct != None else str (entity.content_type)
-            }
-        )
+        request.headers.update ({
+            'Content-Length': len (decoded),
+            'Content-Type': request._gpg_target_ct or str (entity.content_type)
+        })
         request.body = RequestBody (
             SizedReader (
                 StringIO (decoded),
