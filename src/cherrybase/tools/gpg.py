@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import _gnupg
+import gnupg
 import cherrypy
 from cherrypy._cptools import Tool, HandlerWrapperTool
 from cherrypy._cpcompat import ntou
@@ -14,7 +14,7 @@ class Encoder (object):
     def __init__ (self, homedir, key_fingerprint, key_password):
         self._key = key_fingerprint
         self._password = key_password
-        self._gpg = _gnupg.GPG (gnupghome = homedir)
+        self._gpg = gnupg.GPG (gnupghome = homedir)
         # self._gpg.verbose = True
 
     def _check_result (self, result):
