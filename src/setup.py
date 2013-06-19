@@ -6,14 +6,14 @@ try:
 except ImportError:
     from distutils.core import setup
 
+import cherrybase
 
 def main ():
     setup (
         name = 'cherrybase',
-        version = '0.2.1',
+        version = cherrybase.__version__,
         description = 'Wrapper around CherryPy',
         long_description = 'Wrapper around CherryPy',
-        readme = 'cherrybase/README.txt',
         classifiers = [
             'Development Status :: 5 - Production/Stable',
             'Environment :: Web Environment',
@@ -33,13 +33,13 @@ def main ():
             'Topic :: Internet :: WWW/HTTP :: HTTP Servers',
             'Topic :: Internet :: WWW/HTTP :: WSGI',
             'Topic :: Internet :: WWW/HTTP :: WSGI :: Application',
-            'Topic :: Internet :: WWW/HTTP :: WSGI :: Server',
             'Topic :: Software Development :: Libraries :: Application Frameworks',
         ],
         author = 'Ruslan V. Uss',
         author_email = 'unclerus@gmail.com',
         url = 'https://github.com/UncleRus/cherryBase',
         license = 'BSD',
+        scripts = ['bin/cherrybased'],
         packages = [
             'cherrybase',
             'cherrybase.db',
@@ -48,6 +48,9 @@ def main ():
             'cherrybase.orm',
             'cherrybase.orm.drivers',
             'cherrybase.forms',
+        ],
+        data_files = [
+            ('bin', ['bin/cherrybased'])
         ],
         install_requires = ['CherryPy >= 3.2', 'python-gnupg >= 0.3.5']
     )
