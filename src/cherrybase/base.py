@@ -106,7 +106,7 @@ _daemon_conf = ConfigNamespace (
 _server_conf = ConfigNamespace (
     'server',
     {
-        'pkg_path': os.path.dirname (os.path.dirname (__file__)),
+        'pkg_path': '/var/cherrybase/packages',
         'packages': [],
         'main_handler': _Stub (),
         'block_interval': 0.1,
