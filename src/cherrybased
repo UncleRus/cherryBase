@@ -6,7 +6,7 @@ import argparse
 
 def parse_args ():
     result = argparse.ArgumentParser (description = 'CherryPy based server')
-    result.add_argument ('--config', '-c', metavar = '<config file>', type = file, default = 'server.conf', help = 'Path to server configuration file')
+    result.add_argument ('--config', '-c', metavar = '<config file>', type = file, default = 'cherrybased.conf', help = 'Path to server configuration file')
     result.add_argument ('--mode', '-m', type = str, choices = ('production', 'debug'), default = 'debug', help = 'Server mode')
     result.add_argument ('--pid', '-p', metavar = '<PID file>', type = str, default = None, help = 'PID file')
     return result.parse_args ()
