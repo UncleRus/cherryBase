@@ -141,10 +141,7 @@ class Server (object):
         if port != 80:
             basename = '{}:{}'.format (basename, port)
 
-        packages = cherrypy.config.get ('server.packages', [])
-        if isinstance (packages, basestring):
-            packages = [packages]
-        for pkg_name in packages:
+        for pkg_name in [_server_conf.packages] if isinstance (_server_conf.packages, basestring) else _server_conf.packages:
             cherrypy.log.error ('Importing package "{}"'.format (pkg_name), 'SERVER')
             module = __import__ (pkg_name)
             applications = module.get_applications ('debug' if self.debug else 'production', basename)
