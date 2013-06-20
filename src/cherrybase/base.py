@@ -7,6 +7,7 @@ from cherrybase.conf import ConfigNamespace
 from cherrypy import _cptree, _cpconfig, _cpwsgi
 from . import utils
 
+
 class _Stub (object):
     pass
 
@@ -106,7 +107,7 @@ _daemon_conf = ConfigNamespace (
 _server_conf = ConfigNamespace (
     'server',
     {
-        'pkg_path': '/var/cherrybase/packages',
+        'pkg_path': os.getcwd (),
         'packages': [],
         'main_handler': _Stub (),
         'block_interval': 0.1,
@@ -129,12 +130,11 @@ class Server (object):
     def scan_applications (self):
         import sys
 
-        pkg_path = cherrypy.config.get ('server.pkg_path', None)
-        if not pkg_path or not os.path.exists (pkg_path):
-            cherrypy.log.error ('Invalid server packages path (server.pkg_path): {}'.format (pkg_path), 'SERVER', logging.FATAL)
+        if not _server_conf.pkg_path or not os.path.exists (_server_conf.pkg_path):
+            cherrypy.log.error ('Invalid server packages path (server.pkg_path): {}'.format (_server_conf.pkg_path), 'SERVER', logging.FATAL)
             raise ValueError ('Undefined server.pkg_path')
-        if pkg_path not in sys.path:
-            sys.path.append (pkg_path)
+        if _server_conf.pkg_path not in sys.path:
+            sys.path.append (_server_conf.pkg_path)
 
         basename = cherrypy.config.get ('server.basename', cherrypy.config.get ('server.socket_host', '127.0.0.1'))
         port = cherrypy.config.get ('server.socket_port', 8080)
@@ -172,7 +172,7 @@ class Server (object):
         if hasattr (cherrypy.engine, 'signal_handler'):
             cherrypy.engine.signal_handler.subscribe ()
         cherrypy.engine.start ()
-        cherrypy.engine.block ()
+        cherrypy.engine.block (interval = _server_conf.block_interval)
 
     def stop (self):
         cherrypy.engine.stop ()
