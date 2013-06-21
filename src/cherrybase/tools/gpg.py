@@ -40,7 +40,7 @@ class Encoder (object):
             always_trust = True
         );
         self._check_result (result);
-        return str (result)
+        return unicode (result)
 
     def decode (self, encoded, correspondentKey):
         result = self._gpg.decrypt_verify (
@@ -50,7 +50,7 @@ class Encoder (object):
             always_trust = True
         )
         self._check_result (result)
-        return str (result)
+        return unicode (result)
 
 
 class GpgIn (Tool):
@@ -78,7 +78,7 @@ class GpgIn (Tool):
         if not encoder.public_key_exists (request._gpg_client_key):
             raise Exception ('Invalid key')
         encoded = entity.fp.read ()
-        decoded = encoder.decode (encoded, request._gpg_client_key)
+        decoded = encoder.decode (encoded, request._gpg_client_key).encode ('utf-8')
         request.headers.update ({
             'Content-Length': len (decoded),
             'Content-Type': request._gpg_target_ct or str (entity.content_type)

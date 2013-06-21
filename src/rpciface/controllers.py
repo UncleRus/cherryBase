@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from cherrybase import rpc
+import rco
 
 class TestLibrary (object):
 
@@ -9,9 +10,8 @@ class TestLibrary (object):
         return 'Hello ' + who
 
 
-class Root (rpc.Controller):
+class Root (rco.CryptoInterface):
 
     def __init__ (self, *args, **kwargs):
-        self._cp_config ['tools.xmlrpc.allow_none'] = True
         self.test = TestLibrary ()
         super (Root, self).__init__ (*args, **kwargs)

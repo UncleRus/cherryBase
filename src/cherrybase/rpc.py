@@ -83,14 +83,17 @@ class Controller (object):
         return result if getattr (result, '__rpc_exposed', False) else None
 
     def _call_method (self, method, name, args, vpath = None, parameters = None):
-        '''Можно перекрыть в наследнике и переопределить поаедение, например, проверить права и т.п.'''
+        '''Можно перекрыть в наследнике и переопределить поведение, например, проверить права и т.п.'''
         return method (*args)
 
     def default (self, *vpath, **params):
         '''Обработчик по умолчанию'''
         cherrypy.request.body.fp.bytes_read = 0
-        rpc_params, rpc_method = xmlrpcutil.process_body ()
-        if rpc_method == 'ERRORMETHOD':
+        try:
+            rpc_params, rpc_method = xmlrpcutil.get_xmlrpclib ().loads (
+                cherrypy.request.body.read ().encode ('utf-8')
+            )
+        except:
             raise Exception ('Invalid request', -32700)
 
         method = self._find_method (rpc_method)
