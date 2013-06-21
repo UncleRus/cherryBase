@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from cherrybase.rpc import expose
+from cherrybase.utils import to_int
 import cherrypy
 
 _get_own_key = lambda: cherrypy.serving.request.toolmaps ['tools'].get ('gpg_in', {})['key']
@@ -20,9 +21,9 @@ def _prepare_keys (keys):
 
 
 def _check_gpg_result (result):
-    if getattr (result, 'ok', False):
+    if getattr (result, 'ok', False) or result:
         return
-    raise RuntimeError (
+    raise KeyringError (
         '\n'.join ([line for line in getattr (result, 'stderr', 'gpg: {}'.format (getattr (result, 'status', 'Unknown error'))).splitlines () \
             if line.startswith ('gpg: ')]),
         - 2000
@@ -45,7 +46,8 @@ class Keyring (object):
 
     @expose
     def append (self, armored):
-        _check_gpg_result (self._manager.gpg.import_keys (armored))
+        result = self._manager.gpg.import_keys (armored)
+        return {res ['fingerprint']: (bool (to_int (res ['ok'])), res ['text'].strip ('\n')) for res in result.results}
 
     @expose
     def remove (self, keys):

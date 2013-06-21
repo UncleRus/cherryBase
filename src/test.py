@@ -23,7 +23,7 @@ print keys
 
 print server.control.keyring.export (keys.keys ())
 
-server.control.keyring.append ('''
+print server.control.keyring.append ('''
 -----BEGIN PGP PUBLIC KEY BLOCK-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
@@ -68,7 +68,8 @@ TBdOMVeCVFrk1MI0zywr24EcrSwAoIks+DJ1tx8eC03WgYT9IQOT6UrO
 
 ''')
 
-keys = server.control.keyring.keys ()
-print keys
+print server.control.keyring.keys ()
 
-server.control.keyring.remove ('sdasdasdasd')
+#server.control.keyring.remove ('0B5C0DEF06026FD84870ABDB9E7401A210C2F324')
+
+print server.control.keyring.keys ()

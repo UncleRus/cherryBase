@@ -17,7 +17,6 @@ class SecurityManager (object):
 
     def __init__ (self, gpg_homedir, gpg_key, gpg_password):
         self.gpg = gnupg.GPG (gnupghome = gpg_homedir)
-        self.gpg.verbose = True
         self.key = gpg_key
         self.password = gpg_password
         self.ifaces = {}
