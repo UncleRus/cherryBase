@@ -56,3 +56,19 @@ class CryptoInterface (rpc.Controller):
         if not self._security.can_execute (self, cherrypy.request._gpg_client_key, name):
             raise SecurityError ('Access denied', -1000)
         return super (CryptoInterface, self)._call_method (method, name, args, vpath, parameters)
+
+
+class MetaInterface (rpc.Controller):
+
+    _cp_config = {
+        'tools.xmlrpc.on': True,
+        'tools.xmlrpc.allow_none': True,
+        'tools.gpg_in.on': False,
+        'tools.gpg_out.on': False,
+    }
+
+    def __init__ (self, security_manager, code = None, version = None, title = None):
+        self.meta = stdlib.Meta (security_manager, code, version, title)
+        super (MetaInterface, self).__init__ ()
+
+

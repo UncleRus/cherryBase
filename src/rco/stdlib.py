@@ -41,10 +41,13 @@ def _check_gpg_result (result):
     )
 
 
-class Keyring (object):
+class SecurityLib (object):
 
     def __init__ (self, security_manager):
         self._manager = security_manager
+
+
+class Keyring (SecurityLib):
 
     @expose
     def keys (self):
@@ -73,10 +76,7 @@ class Keyring (object):
         return self._manager.gpg.export_keys (_prepare_keys (keys))
 
 
-class Access (object):
-
-    def __init__ (self, security_manager):
-        self._manager = security_manager
+class Access (SecurityLib):
 
     @expose
     def grant (self, methods, keys):
@@ -88,3 +88,27 @@ class Access (object):
         # FIXME: Убрать заглушку
         pass
 
+
+class Meta (SecurityLib):
+
+    def __init__ (self, security_manager, code, version, title):
+        super (Meta, self).__init__ (security_manager)
+        self.code = code
+        self.title = title
+        self.version = version
+
+    @expose
+    def public_key (self):
+        '''Public key of this service'''
+        return self._manager.gpg.export_keys (_get_own_key ())
+
+
+    @expose
+    def info (self):
+        '''Service description'''
+        return {
+            'code': self.code,
+            'title': self.title,
+            'version': self.version,
+            'key_fingerprint': _get_own_key ()
+        }

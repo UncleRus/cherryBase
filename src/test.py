@@ -73,3 +73,14 @@ print server.control.keyring.keys ()
 server.control.keyring.remove ('0B5C0DEF06026FD84870ABDB9E7401A210C2F324')
 
 print server.control.keyring.keys ()
+
+print '\n===================================================================================\n'
+
+metaiface = xmlrpclib.Server ('http://rpc.cherrybase:8080/meta/', allow_none = True)
+
+print metaiface.system.listMethods ()
+
+print metaiface.meta.info ()
+
+print metaiface.meta.public_key ()
+

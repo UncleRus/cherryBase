@@ -14,8 +14,9 @@ def get_applications (mode, basename):
     config = {}
     _cpconfig.merge (config, pkg_resources.resource_filename (__package__, 'config/{}.conf'.format (mode)))
 
-    def get_conf_global (entry, default = None):
-        return config.get ('/', {}).get (entry, default)
+#    def  (entry, default = None):
+#        return config.get ('/', {}).get (entry, default)
+    get_conf_global = lambda entry, default = None: config.get ('/', {}).get (entry, default)
 
     security_manager = rco.SecurityManager (
         get_conf_global ('tools.gpg_in.homedir'),
@@ -30,5 +31,15 @@ def get_applications (mode, basename):
         config = config,
         routes = (
             ('/', controllers.Root (security_manager), None),
+            (
+                '/meta',
+                rco.MetaInterface (
+                    security_manager,
+                    code = get_conf_global ('service.code', __name__),
+                    version = get_conf_global ('service.version', '1.0.0'),
+                    title = get_conf_global ('service.title', __name__)
+                ),
+                None
+            ),
         )
     )

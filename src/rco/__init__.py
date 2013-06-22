@@ -1,3 +1,3 @@
-from . import base, gpgxmlrpc
+from . import base, gpg
 
-from base import CryptoInterface, SecurityError, SecurityManager
+from base import CryptoInterface, MetaInterface, SecurityError, SecurityManager

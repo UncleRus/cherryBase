@@ -34,16 +34,18 @@ class Introspection (object):
         self._controller = controller
         self.methods = {}
 
-    def scan (self, obj = None, path = ''):
+    def scan (self, obj = None, path = '', prev = None):
         _obj = obj if obj else self._controller
         for member in inspect.getmembers (_obj):
             if member [0].startswith ('_') or inspect.isclass (member [1]):
                 continue
             _path = '.'.join ((path, member [0])) if path else member [0]
-            if getattr (member [1], '__rpc_exposed', False):
+            if callable (member [1]) and getattr (member [1], '__rpc_exposed', False):
                 self.methods [_path] = member [1].__doc__
             elif not inspect.ismethod (member [1]):
-                self.scan (member [1], _path)
+                if member [1] == prev:
+                    continue
+                self.scan (member [1], _path, _obj)
 
     @expose
     def listMethods (self):
