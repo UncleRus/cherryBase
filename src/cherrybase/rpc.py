@@ -6,6 +6,7 @@ from cherrypy.lib import xmlrpcutil
 import inspect
 import sys
 from . import utils
+import logging
 
 def _on_error (*args, **kwargs):
     e = sys.exc_info ()[1]
@@ -37,14 +38,12 @@ class Introspection (object):
     def scan (self, obj = None, path = '', prev = None):
         _obj = obj if obj else self._controller
         for member in inspect.getmembers (_obj):
-            if member [0].startswith ('_') or inspect.isclass (member [1]):
+            if member [0].startswith ('_') or inspect.isclass (member [1]) or member [1] == prev:
                 continue
             _path = '.'.join ((path, member [0])) if path else member [0]
             if callable (member [1]) and getattr (member [1], '__rpc_exposed', False):
                 self.methods [_path] = member [1].__doc__
             elif not inspect.ismethod (member [1]):
-                if member [1] == prev:
-                    continue
                 self.scan (member [1], _path, _obj)
 
     @expose
@@ -86,6 +85,7 @@ class Controller (object):
 
     def _call_method (self, method, name, args, vpath = None, parameters = None):
         '''Можно перекрыть в наследнике и переопределить поведение, например, проверить права и т.п.'''
+        cherrypy.log.error ('call {}:{}'.format ('/'.join (vpath), name), 'RPC', logging.DEBUG)
         return method (*args)
 
     def default (self, *vpath, **params):

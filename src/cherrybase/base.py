@@ -126,6 +126,9 @@ class Server (object):
         # настраиваем логи
         utils.setup_log (debug = self.debug)
         cherrypy.log.screen = self.debug
+        if debug:
+            cherrypy.log._get_builtin_handler (cherrypy.log.error_log, 'screen').setLevel (logging.DEBUG)
+            cherrypy.log._get_builtin_handler (cherrypy.log.access_log, 'screen').setLevel (logging.DEBUG)
 
     def scan_applications (self):
         import sys
