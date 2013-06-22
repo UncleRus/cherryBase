@@ -2,12 +2,12 @@
 # -*- coding: utf-8 -*-
 
 import xmlrpclib
-from rco import gpgxmlrpc
+from rco import gpg
 
 server = xmlrpclib.Server (
     'http://rpc.cherrybase:8080/',
     allow_none = True,
-    transport = gpgxmlrpc.GpgTransport (
+    transport = gpg.GpgTransport (
         gpg_homedir = '/home/rus/work/home/cherryBase/src/rpciface/keyring',
         gpg_key = '55A6F35DC05A3728FB45AA0277EA551D7EAC9ABD',
         gpg_password = '123321',
@@ -70,6 +70,6 @@ TBdOMVeCVFrk1MI0zywr24EcrSwAoIks+DJ1tx8eC03WgYT9IQOT6UrO
 
 print server.control.keyring.keys ()
 
-#server.control.keyring.remove ('0B5C0DEF06026FD84870ABDB9E7401A210C2F324')
+server.control.keyring.remove ('0B5C0DEF06026FD84870ABDB9E7401A210C2F324')
 
 print server.control.keyring.keys ()

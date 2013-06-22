@@ -28,11 +28,9 @@ class GpgTransport (xmlrpclib.Transport):
         connection.endheaders (encoded)
 
     def parse_response (self, response):
-        if hasattr (response, 'getheader'):
-            if response.getheader ('Content-Encoding', '') == 'gzip':
-                stream = xmlrpclib.GzipDecodedResponse (response)
-            else:
-                stream = response
+        if hasattr (response, 'getheader') and \
+                response.getheader ('Content-Encoding', '') == 'gzip':
+            stream = xmlrpclib.GzipDecodedResponse (response)
         else:
             stream = response
 

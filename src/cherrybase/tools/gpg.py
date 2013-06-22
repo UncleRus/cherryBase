@@ -42,10 +42,10 @@ class Encoder (object):
         self._check_result (result);
         return unicode (result)
 
-    def decode (self, encoded, correspondentKey):
+    def decode (self, encoded, correspondent_key):
         result = self._gpg.decrypt_verify (
             encoded,
-            correspondentKey,
+            correspondent_key,
             passphrase = self._password,
             always_trust = True
         )

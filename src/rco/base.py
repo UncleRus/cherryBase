@@ -48,6 +48,7 @@ class CryptoInterface (rpc.Controller):
         if mount_point == '/':
             self.control = Namespace ()
             self.control.keyring = stdlib.Keyring (self._security)
+            self.control.access = stdlib.Access (self._security)
         super (CryptoInterface, self).__init__ ()
         self._security.connect_interface (self)
 

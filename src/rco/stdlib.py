@@ -4,6 +4,17 @@ from cherrybase.rpc import expose
 from cherrybase.utils import to_int
 import cherrypy
 
+_algos = {
+    '0': None,
+    '1': 'RSA',
+    '2': 'RSA_E',
+    '3': 'RSA_S',
+    '16': 'ELGAMAL_E',
+    '17': 'DSA',
+    '16': 'ELGAMAL'
+}
+
+
 _get_own_key = lambda: cherrypy.serving.request.toolmaps ['tools'].get ('gpg_in', {})['key']
 
 
@@ -41,7 +52,11 @@ class Keyring (object):
         result = {}
         for key in self._manager.gpg.list_keys ():
             if not key ['fingerprint'].endswith (_own_key):
-                result [key ['fingerprint']] = key ['uids'][0] if len (key ['uids']) > 0 else None
+                result [key ['fingerprint']] = {
+                    'info': key ['uids'][0] if len (key ['uids']) > 0 else None,
+                    'length': to_int (key ['length']),
+                    'algo': _algos [key ['algo']]
+                }
         return result
 
     @expose
@@ -56,3 +71,20 @@ class Keyring (object):
     @expose
     def export (self, keys):
         return self._manager.gpg.export_keys (_prepare_keys (keys))
+
+
+class Access (object):
+
+    def __init__ (self, security_manager):
+        self._manager = security_manager
+
+    @expose
+    def grant (self, methods, keys):
+        # FIXME: Убрать заглушку
+        pass
+
+    @expose
+    def revoke (self, methods, keys):
+        # FIXME: Убрать заглушку
+        pass
+
