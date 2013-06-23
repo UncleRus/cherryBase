@@ -3,7 +3,11 @@
 from cherrybase import rpc
 import gnupg
 import cherrypy
+import cherrybase
+import pkg_resources
+from cherrypy import _cpconfig
 from . import stdlib
+
 
 class SecurityError (Exception):
     pass
@@ -25,6 +29,18 @@ class SecurityManager (object):
         if not isinstance (iface, CryptoInterface):
             raise ValueError ('Interface must be instance of rco.CryptoInterface')
         self.ifaces [iface._mount_point] = iface.system.methods.keys ()
+
+    def grant (self, methods, keys):
+        # FIXME: Убрать заглушку
+        pass
+
+    def revoke (self, methods, keys):
+        # FIXME: Убрать заглушку
+        pass
+
+    def keys (self, methods = None, keys = None):
+        # FIXME: Убрать заглушку
+        return {}
 
     def can_execute (self, iface, client_key, method):
         # FIXME: Сделать нормальную проверку
@@ -70,5 +86,42 @@ class MetaInterface (rpc.Controller):
     def __init__ (self, security_manager, code = None, version = None, title = None):
         self.meta = stdlib.Meta (security_manager, code, version, title)
         super (MetaInterface, self).__init__ ()
+
+
+class Service (cherrybase.Application):
+
+    def __init__ (self, package, basename, mode, vhosts, root = CryptoInterface):
+        self.raw_config = {}
+        _cpconfig.merge (
+            self.raw_config,
+            pkg_resources.resource_filename (package, '__config__/{}.conf'.format (mode))
+        )
+        self.security_manager = SecurityManager (
+            self.raw_conf_val ('tools.gpg_in.homedir'),
+            self.raw_conf_val ('tools.gpg_in.key'),
+            self.raw_conf_val ('tools.gpg_in.password')
+        )
+        code = self.raw_conf_val ('service.code', package),
+        super (Service, self).__init__ (
+            name = code,
+            vhosts = [vhost + basename if vhost [-1] == '.' else vhost for vhost in vhosts],
+            config = self.raw_config,
+            routes = (
+                ('/', root (self.security_manager), None),
+                (
+                    '/meta',
+                    MetaInterface (
+                        self.security_manager,
+                        code = code,
+                        version = self.raw_conf_val ('service.version', '1.0.0'),
+                        title = self.raw_conf_val ('service.title', code)
+                    ),
+                    None
+                ),
+            )
+        )
+
+    def raw_conf_val (self, entry, default = None, path = '/'):
+        return self.raw_config.get (path, {}).get (entry, default)
 
 

@@ -3,6 +3,8 @@
 from cherrybase.rpc import expose
 from cherrybase.utils import to_int
 import cherrypy
+import cherrybase
+import rco
 
 _algos = {
     '0': None,
@@ -51,6 +53,7 @@ class Keyring (SecurityLib):
 
     @expose
     def keys (self):
+        '''Get full list of public keys'''
         _own_key = _get_own_key ()
         result = {}
         for key in self._manager.gpg.list_keys ():
@@ -64,29 +67,42 @@ class Keyring (SecurityLib):
 
     @expose
     def append (self, armored):
+        '''Import key in armored package format'''
         result = self._manager.gpg.import_keys (armored)
         return {res ['fingerprint']: (bool (to_int (res ['ok'])), res ['text'].strip ('\n')) for res in result.results}
 
     @expose
     def remove (self, keys):
+        '''Remove key(s)'''
         _check_gpg_result (self._manager.gpg.delete_keys (_prepare_keys (keys)))
 
     @expose
     def export (self, keys):
+        '''Get key(s) in armored package format'''
         return self._manager.gpg.export_keys (_prepare_keys (keys))
 
 
 class Access (SecurityLib):
 
     @expose
+    def keys_rights (self, keys = None):
+        '''Get rights of key(s)'''
+        self._manager.rights (keys = keys)
+
+    @expose
+    def methods_rights (self, methods = None):
+        '''Get rights of key(s)'''
+        self._manager.rights (methods = methods)
+
+    @expose
     def grant (self, methods, keys):
-        # FIXME: Убрать заглушку
-        pass
+        '''Grant execution on method(s)/namespace(s) to key(s)'''
+        self._manager.grant (methods, keys)
 
     @expose
     def revoke (self, methods, keys):
-        # FIXME: Убрать заглушку
-        pass
+        '''Revoke execution on method(s)/namespace(s) from key(s)'''
+        self._manager.revoke (methods, keys)
 
 
 class Meta (SecurityLib):
@@ -105,7 +121,6 @@ class Meta (SecurityLib):
             self.key = self._manager.gpg.export_keys (_get_own_key ())
         return self.key
 
-
     @expose
     def info (self):
         '''Service description'''
@@ -115,3 +130,4 @@ class Meta (SecurityLib):
             'version': self.version,
             'key_fingerprint': _get_own_key ()
         }
+
