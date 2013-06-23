@@ -96,11 +96,14 @@ class Meta (SecurityLib):
         self.code = code
         self.title = title
         self.version = version
+        self.key = None
 
     @expose
     def public_key (self):
         '''Public key of this service'''
-        return self._manager.gpg.export_keys (_get_own_key ())
+        if not self.key:
+            self.key = self._manager.gpg.export_keys (_get_own_key ())
+        return self.key
 
 
     @expose

@@ -14,8 +14,8 @@ class _Stub (object):
 
 class ApplicationTree (object):
 
-    def __init__ (self, name, stub_factory = _Stub):
-        self.name = name
+    def __init__ (self, owner, stub_factory = _Stub):
+        self.owner = owner
         self.stub_factory = stub_factory
         self.clear ()
 
@@ -48,19 +48,19 @@ class ApplicationTree (object):
         path_list = stripped_path.split ('/') if stripped_path else []
 
         if self.handler_exists (path_list):
-            raise AttributeError ('Path "{0}" is busy in "{1}"'.format (path, self.name))
+            raise AttributeError ('Path "{0}" is busy in "{1}"'.format (path, self.owner.name))
 
         if config:
             if not hasattr (handler, '_cp_config'):
                 handler._cp_config = {}
             _cpconfig.merge (handler._cp_config, config)
 
-        handler._mount_path = '/' + stripped_path
+        handler._cp_mount_path = '/' + stripped_path
         if not path_list:
             self.root = handler
         else:
             setattr (self.find_owner (path_list [0:-1]), path_list [-1], handler)
-        cherrypy.log.error ('{} is mounted on "{}" in "{}"'.format (type (handler).__name__, path, self.name), 'TREE')
+        cherrypy.log.error ('{} is mounted on "{}" in "{}"'.format (type (handler).__name__, path, self.owner.name), 'TREE')
 
 
 class Application (object):
@@ -68,7 +68,7 @@ class Application (object):
     def __init__ (self, name = None, config = None, vhosts = None, routes = None):
         self.name = name or uuid1 ()
         self.vhosts = vhosts or [self.name]
-        self.tree = ApplicationTree (self.name)
+        self.tree = ApplicationTree (self)
         self.config = config
         self.app = None
         if routes:
@@ -105,7 +105,7 @@ _daemon_conf = ConfigNamespace (
     }
 )
 _server_conf = ConfigNamespace (
-    'server',
+    'cherrybase',
     {
         'pkg_path': os.getcwd (),
         'packages': [],
@@ -134,8 +134,8 @@ class Server (object):
         import sys
 
         if not _server_conf.pkg_path or not os.path.exists (_server_conf.pkg_path):
-            cherrypy.log.error ('Invalid server packages path (server.pkg_path): {}'.format (_server_conf.pkg_path), 'SERVER', logging.FATAL)
-            raise ValueError ('Undefined server.pkg_path')
+            cherrypy.log.error ('Invalid server packages path (cherrybase.pkg_path): {}'.format (_server_conf.pkg_path), 'SERVER', logging.FATAL)
+            raise ValueError ('Undefined cherrybase.pkg_path')
         if _server_conf.pkg_path not in sys.path:
             sys.path.append (_server_conf.pkg_path)
 
