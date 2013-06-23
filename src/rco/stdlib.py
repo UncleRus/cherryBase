@@ -3,8 +3,7 @@
 from cherrybase.rpc import expose
 from cherrybase.utils import to_int
 import cherrypy
-import cherrybase
-import rco
+
 
 _algos = {
     '0': None,
