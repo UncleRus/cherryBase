@@ -92,10 +92,12 @@ class Controller (object):
         '''Обработчик по умолчанию'''
         cherrypy.request.body.fp.bytes_read = 0
         try:
+            body = cherrypy.request.body.read ()
             rpc_params, rpc_method = xmlrpcutil.get_xmlrpclib ().loads (
-                cherrypy.request.body.read ().encode ('utf-8')
+                body if isinstance (body, str) else body.encode ('utf-8')
             )
         except:
+            cherrypy.log.error ('Parsing request error', 'RPC', logging.WARNING, True)
             raise Exception ('Invalid request', -32700)
 
         method = self._find_method (rpc_method)

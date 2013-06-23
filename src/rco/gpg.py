@@ -43,6 +43,7 @@ class GpgTransport (xmlrpclib.Transport):
                 break
             encoded.append (data)
 
+        print self.gpg.decode (u''.join (encoded), self.gpg_server_key)
         return xmlrpclib.Transport.parse_response (
             self,
             StringIO (self.gpg.decode (u''.join (encoded), self.gpg_server_key).encode ('utf-8'))

@@ -32,12 +32,14 @@ class TasksQueue (SimplePlugin):
         self.bus.log ('Stopped TasksQueue')
 
     def run (self):
+        self.bus.publish ('acquire_thread')
         while self.running:
             try:
                 func, args, kwargs = self.queue.get (block = True, timeout = self.timeout)
                 func (*args, **kwargs)
             except Queue.Empty:
                 if self.running == 'stopping':
+                    self.bus.publish ('release_thread')
                     return
                 continue
             except:
@@ -52,13 +54,13 @@ class TaskManager (SimplePlugin):
     def __init__ (self, bus):
         SimplePlugin.__init__ (self, bus)
         self._tasks = {}
-        self._timers = {}
         self.started = False
 
     def start (self):
         self.started = True
-        for timer in [timer for timer in self._timers.values () if timer.finished]:
-            timer.start ()
+        for task in self._tasks.values ():
+            if task [1] and task [1].finished:
+                task [1].start ()
         self.bus.log ('Started TaskManager')
 
     def stop (self):
@@ -69,23 +71,25 @@ class TaskManager (SimplePlugin):
     def _run_task (self, code, interval, *args, **kwargs):
         if code not in self._tasks:
             return
-        self._timers [code] = Timer (interval, self._run_task, [code, interval] + list (args), kwargs)
-        self._timers [code].start ()
-        self._tasks [code] (*args, **kwargs)
+        self.bus.publish ('acquire_thread')
+        task = self._tasks [code]
+        task [1] = Timer (interval, self._run_task, [code, interval] + list (args), kwargs)
+        task [1].start ()
+        task [0] (*args, **kwargs)
+        self.bus.publish ('release_thread')
 
     def add (self, code, task, interval, *args, **kwargs):
-        self._tasks [code] = task
-        self._timers [code] = Timer (interval, self._run_task, [code, interval] + list (args), kwargs)
+        timer = Timer (interval, self._run_task, [code, interval] + list (args), kwargs)
+        self._tasks [code] = [task, timer]
         if self.started:
-            self._timers [code].start ()
+            timer.start ()
 
     def remove (self, code):
-        self._timers [code].cancel ()
+        self._tasks [code][1].cancel ()
         del self._tasks [code]
-        del self._timers [code]
 
     def clear (self):
-        for timer in self._timers.values ():
-            timer.cancel ()
+        for task in self._tasks.values ():
+            if task [1]:
+                task [1].cancel ()
         self._tasks.clear ()
-        self._timers.clear ()

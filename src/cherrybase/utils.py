@@ -99,12 +99,10 @@ class PoolsCatalog (object):
         self._start_thread (-1)
 
     def _start_thread (self, thread_index):
-        cherrypy.engine.log ('Thread started: {}'.format (thread_index))
         cherrypy.thread_data.index = thread_index
         self.objects [thread_index] = {}
 
     def _stop_thread (self, thread_index):
-        cherrypy.engine.log ('Thread stopped: {}'.format (thread_index))
         if thread_index not in self.objects:
             return
         for name, object in self.objects [thread_index].items ():
