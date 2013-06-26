@@ -70,7 +70,7 @@ class Application (object):
         self.vhosts = vhosts or [self.name]
         self.tree = ApplicationTree (self)
         self.config = config
-        self.app = None
+        self.app = _cptree.Application (None, '', self.config)
         if routes:
             for path, handler, cfg in routes:
                 self.tree.add (path, handler, cfg)
@@ -84,7 +84,7 @@ class Application (object):
         return '{}/{}.{}.log'.format (os.path.dirname (cfg), self.name, log_type) if cfg else None
 
     def prepare (self, debug = True):
-        self.app = _cptree.Application (self.tree.root, '', self.config)
+        self.app.root = self.tree.root
         if not debug:
             self.app.merge ({
                 '/': {
@@ -158,7 +158,7 @@ class Server (object):
         for app in self.applications:
             app.prepare (self.debug)
             vhosts.update ({host: app.app for host in app.vhosts})
-            cherrypy.log.error ('Application {} virtual hosts: {}'.format (app.name, [host for host in app.vhosts]), 'SERVER')
+            cherrypy.log.error ('Application {} virtual hosts: {}'.format (app.name, app.vhosts), 'SERVER')
 
         self.daemonize ()
 

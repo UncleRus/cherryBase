@@ -2,6 +2,8 @@
 
 from . import controllers
 import rco
+from cherrybase import orm, db
+import cherrybase.db.drivers.sqlite as sqlite
 
 def get_applications (mode, basename):
 

@@ -14,7 +14,7 @@ def _on_error (*args, **kwargs):
         message = unicode (e.args [0])
         code = utils.to_int (e.args [1], 1)
     else:
-        message = unicode (e)
+        message = '{}: {}'.format (type (e).__name__, unicode (e))
         code = 1
     xmlrpclib = xmlrpcutil.get_xmlrpclib ()
     xmlrpcutil._set_response (xmlrpclib.dumps (xmlrpclib.Fault (code, message)))

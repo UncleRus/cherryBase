@@ -24,17 +24,23 @@ class SqlAlchemy (object):
         def __call__ (self):
             return db.catalog.get (self.db_pool_name)
 
-    def __init__ (self, db_pool_name, engine_url = 'postgresql://', pool_size = 10, pool_max_overflow = 60):
+    def __init__ (self, db_pool_name = None, engine_url = 'postgresql://', pool_size = 10, pool_max_overflow = 60):
         self.db_pool_name = db_pool_name
-        self.engine = sqlalchemy.create_engine (
-            engine_url,
-            pool = sqlalchemy.pool.QueuePool (
-                self._GetConnection (db_pool_name),
-                pool_size = pool_size,
-                max_overflow = pool_max_overflow,
-                use_threadlocal = True
+        if db_pool_name:
+            self.engine = sqlalchemy.create_engine (
+                engine_url,
+                pool = sqlalchemy.pool.QueuePool (
+                    self._GetConnection (db_pool_name),
+                    pool_size = pool_size,
+                    max_overflow = pool_max_overflow,
+                    use_threadlocal = True
+                )
             )
-        )
+        else:
+            self.engine = sqlalchemy.create_engine (
+                engine_url,
+                poolclass = sqlalchemy.pool.QueuePool
+            )
 
     def get (self):
         return sessionmaker (bind = self.engine)()
