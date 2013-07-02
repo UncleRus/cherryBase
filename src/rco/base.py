@@ -122,6 +122,7 @@ class SecurityManager (object):
             session = orm.catalog.get (self.pool_name)
             session.query (mdl.Rights).filter (mdl.Rights.fingerprint.in_ (keys)).delete (synchronize_session = False)
             session.commit ()
+            orm.catalog.put (self.pool_name, session)
             self._update_keys ()
             return
         raise SecurityError (
@@ -189,14 +190,14 @@ class MetaInterface (rpc.Controller):
 
 class Service (cherrybase.Application):
 
-    def __init__ (self, package, basename, mode, vhosts, root = CryptoInterface):
+    def __init__ (self, package, basename, mode, vhosts, root = CryptoInterface, config = None):
         self.package = package
 
         # Готовим конфигурацию
         self.raw_config = {}
         _cpconfig.merge (
             self.raw_config,
-            pkg_resources.resource_filename (package, '__config__/{}.conf'.format (mode))
+            config or pkg_resources.resource_filename (package, '__config__/{}.conf'.format (mode))
         )
 
         self.code = self.raw_conf_val ('service.code', package)
