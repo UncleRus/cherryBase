@@ -3,7 +3,6 @@
 from cherrybase.rpc import expose
 import cherrypy
 
-
 _get_own_key = lambda: cherrypy.serving.request.toolmaps ['tools'].get ('gpg_in', {})['key']
 
 
@@ -88,4 +87,3 @@ class Meta (SecurityLib):
             'version': self.version,
             'key_fingerprint': _get_own_key ()
         }
-

@@ -2,12 +2,12 @@
 # -*- coding: utf-8 -*-
 
 import xmlrpclib
-from rco import gpg
+from rco import client
 
 server = xmlrpclib.Server (
     'http://rpc.cherrybase:8080/',
     allow_none = True,
-    transport = gpg.GpgTransport (
+    transport = client.GpgTransport (
         gpg_homedir = '/home/rus/work/home/cherryBase/src/rpciface/keyring',
         gpg_key = '55A6F35DC05A3728FB45AA0277EA551D7EAC9ABD',
         gpg_password = '123321',

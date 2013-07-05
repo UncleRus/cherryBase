@@ -37,6 +37,8 @@ class Introspection (object):
 
     def scan (self, obj = None, path = '', prev = None):
         _obj = obj or self._controller
+        if _obj == self._controller:
+            self.methods = {}
         for member in inspect.getmembers (_obj):
             if member [0].startswith ('_') or inspect.isclass (member [1]) or member [1] == prev or member [1] is None:
                 continue

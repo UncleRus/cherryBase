@@ -10,6 +10,7 @@ from cherrypy import _cpconfig
 from . import stdlib
 from . import _secmodel as mdl
 
+
 class SecurityError (Exception):
     pass
 
@@ -83,7 +84,7 @@ class SecurityManager (object):
                 self.keys [key ['fingerprint']] = {
                     'info': key ['uids'][0] if len (key ['uids']) > 0 else None,
                     'length': to_int (key ['length']),
-                    'algo': self._algos [key ['algo']]
+                    'algo': self._algos.get (key ['algo'], key ['algo'])
                 }
 
     def _prepare_keys (self, keys):
@@ -165,6 +166,7 @@ class CryptoInterface (rpc.Controller):
             self.control = Namespace ()
             self.control.keyring = stdlib.Keyring (self._security)
             self.control.access = stdlib.Access (self._security)
+            self.callbacks = Namespace ()
         super (CryptoInterface, self).__init__ ()
         self._security.connect_interface (self)
 
@@ -202,18 +204,30 @@ class Service (cherrybase.Application):
 
         self.code = self.raw_conf_val ('service.code', package)
 
-        # Создаем менеджер безопасности
-        self.security_manager = SecurityManager (
-            self,
-            self.raw_conf_val ('tools.gpg_in.homedir'),
-            self.raw_conf_val ('tools.gpg_in.key'),
-            self.raw_conf_val ('tools.gpg_in.password')
-        )
+        gpg_homedir = self.raw_conf_val ('tools.gpg_in.homedir')
+        gpg_key = self.raw_conf_val ('tools.gpg_in.key')
+        gpg_password = self.raw_conf_val ('tools.gpg_in.password')
 
+        # Создаем менеджер безопасности
+        self.security_manager = SecurityManager (self, gpg_homedir, gpg_key, gpg_password)
+
+        # Создаем постоянный клиент для роутинга
+        routing_data = self.raw_conf_val ('routing_service')
+        if routing_data:
+            import client
+            self.routing = client.Server (
+                routing_data [0],
+                routing_data [1],
+                gpg_homedir,
+                gpg_key,
+                gpg_password
+            )
+
+        _vhosts = [vhost + basename if vhost.endswith ('.') else vhost for vhost in vhosts]
         # Родительский конструктор
         super (Service, self).__init__ (
             name = self.code,
-            vhosts = [vhost + basename if vhost [-1] == '.' else vhost for vhost in vhosts],
+            vhosts = _vhosts,
             config = self.raw_config,
             routes = (
                 ('/', root (self.security_manager), None),
@@ -229,8 +243,12 @@ class Service (cherrybase.Application):
                 ),
             )
         )
+        self.main_name = _vhosts [0] + '/'
+        self.app.service = self
 
     def raw_conf_val (self, entry, default = None, path = '/'):
         return self.raw_config.get (path, {}).get (entry, default)
 
+    def url (self, method_name):
+        return 'http://{}:{}'.format (self.main_name, method_name)
 

@@ -7,10 +7,12 @@ import cherrybase.db.drivers.sqlite as sqlite
 
 def get_applications (mode, basename):
 
-    return rco.Service (
+    service = rco.Service (
         package = __package__,
         basename = basename,
         mode = mode,
         vhosts = ('rpc.',),
         root = controllers.Root
     )
+    rco.auth.AuthManager (service)
+    return service
