@@ -4,6 +4,7 @@ import cherrypy
 from . import _tickets
 from cherrybase.utils import to_int
 from rco import client
+import logging
 
 class TicketAuth (cherrypy.Tool):
 
@@ -37,6 +38,7 @@ class TicketAuth (cherrypy.Tool):
         request = cherrypy.serving.request
         tickets = self.get_tickets ()
         tid = request.headers.get ('RCO-Ticket')
+        print 'TicketAuth', tid
         if not tid:
             if strict:
                 raise _tickets.AuthError ('Show me your ticket', -3000)
@@ -55,10 +57,11 @@ class TicketAuth (cherrypy.Tool):
                 tid,
                 client.get_service ('logon').auth.register (
                     tid,
-                    self.service.url (callback_method)
+                    request.app.service.url (callback_method)
                 )
             )
         except Exception as e:
+            request.app.log ('Cannot check ticket {}'.format (tid), 'RCO.AUTH', severity = logging.ERROR, traceback = True)
             args = getattr (e, 'args', [None, 1])
             if len (args) < 2 or to_int (args [1], 1) != -3500:
                 raise _tickets.AuthError ('Cannot check your ticket: {}'.format (e))

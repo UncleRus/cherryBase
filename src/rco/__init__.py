@@ -9,5 +9,9 @@ class BaseError (Exception):
 from . import base, client
 from base import CryptoInterface, MetaInterface, SecurityError, SecurityManager, Service
 
+import cherrypy
+toolbox = cherrypy.tools
 
-from cherrybase import utils as _utils
+from .tools import TicketAuth
+toolbox.ticket_auth = TicketAuth ()
+

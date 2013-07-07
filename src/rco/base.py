@@ -9,6 +9,13 @@ import pkg_resources
 from cherrypy import _cpconfig
 from . import stdlib
 from . import _secmodel as mdl
+from cherrypy.lib import xmlrpcutil
+import logging, sys
+
+
+def config (name, default = None, strict = False):
+    app = cherrypy.request.app
+    return app.service.service_config (name, default, strict)
 
 
 class SecurityError (Exception):
@@ -41,10 +48,6 @@ class SecurityManager (object):
         self.key = gpg_key
         self.password = gpg_password
         self.ifaces = {}
-
-        self.own_key = service.raw_conf_val ('tools.gpg_in.key')
-        if not self.own_key:
-            raise KeyError ('tools.gpg_in.key is not defined for root interface')
         self._update_keys ()
 
         # Готовим хранилище
@@ -54,14 +57,14 @@ class SecurityManager (object):
         import cherrybase.db.drivers.sqlite as sqlite
         import cherrybase.orm.drivers.alchemy as alchemy
 
-        min_conn = service.raw_conf_val ('security_manager.db_min_connections', 5)
-        max_conn = service.raw_conf_val ('security_manager.db_max_connections', 30)
+        min_conn = service.service_config ('security_manager.db_min_connections', 5)
+        max_conn = service.service_config ('security_manager.db_max_connections', 30)
 
         # Создаем пул подключений к специальной БД
         db.catalog [self.pool_name] = sqlite.Sqlite (
             min_connections = min_conn,
             max_connections = max_conn,
-            database = service.raw_conf_val ('security_manager.db_filename', ':memory:')
+            database = service.service_config ('security_manager.db_filename', ':memory:')
         )
         # Обертываем подключения в ORM
         orm.catalog [self.pool_name] = alchemy.SqlAlchemy (
@@ -80,7 +83,7 @@ class SecurityManager (object):
     def _update_keys (self):
         self.keys = {}
         for key in self.gpg.list_keys ():
-            if not key ['fingerprint'].endswith (self.own_key):
+            if not key ['fingerprint'].endswith (self.key):
                 self.keys [key ['fingerprint']] = {
                     'info': key ['uids'][0] if len (key ['uids']) > 0 else None,
                     'length': to_int (key ['length']),
@@ -93,8 +96,8 @@ class SecurityManager (object):
         for k in keys:
             if len (k) < 8:
                 raise SecurityError ('Key id too short: {}'.format (k))
-            if k.endswith (self.own_key) or self.own_key.endswith (k):
-                raise SecurityError ('Cannot manipulate my own key: {}'.format (self.own_key), -2000)
+            if k.endswith (self.key) or self.key.endswith (k):
+                raise SecurityError ('Cannot manipulate my own key: {}'.format (self.key), -2000)
         return keys
 
     def connect_interface (self, iface):
@@ -118,13 +121,16 @@ class SecurityManager (object):
         keys = self._prepare_keys (keys)
         if not keys:
             return
-        result = self.gpg.delete_keys (keys)
+        self._check_result (self.gpg.delete_keys (keys))
+        session = orm.catalog.get (self.pool_name)
+        session.query (mdl.Rights).filter (mdl.Rights.fingerprint.in_ (keys)).delete (synchronize_session = False)
+        session.commit ()
+        orm.catalog.put (self.pool_name, session)
+        self._update_keys ()
+        return
+
+    def _check_result (self, result):
         if getattr (result, 'ok', False) or result:
-            session = orm.catalog.get (self.pool_name)
-            session.query (mdl.Rights).filter (mdl.Rights.fingerprint.in_ (keys)).delete (synchronize_session = False)
-            session.commit ()
-            orm.catalog.put (self.pool_name, session)
-            self._update_keys ()
             return
         raise SecurityError (
             '\n'.join ([line for line in getattr (result, 'stderr', 'gpg: {}'.format (getattr (result, 'status', 'Unknown error'))).splitlines () \
@@ -140,12 +146,109 @@ class SecurityManager (object):
     def export_keys (self, keys):
         return self.gpg.export_keys (self._prepare_keys (keys))
 
-    def can_execute (self, iface, client_key, method):
+    def can_execute (self, iface, method):
         request = cherrypy.request
         if request.app.find_config ('/', 'full_access'):
             return True
         # FIXME: Сделать нормальную проверку
         return True
+
+    def public_key_exists (self, key):
+        if len (key) < 8:
+            return False
+        key = key.upper ()
+        for item in self.gpg.list_keys ():
+            if item.get ('fingerprint', '').upper ().endswith (key):
+                return True
+        return False
+
+    def encrypt (self, data, recipient_key):
+        result = self.gpg.encrypt (
+            data,
+            recipient_key,
+            sign = self.key,
+            passphrase = self.password,
+            always_trust = True
+        );
+        self._check_result (result);
+        return unicode (result)
+
+    def decrypt (self, encoded, correspondent_key):
+        result = self.gpg.decrypt_verify (
+            encoded,
+            correspondent_key,
+            passphrase = self.password,
+            always_trust = True
+        )
+        self._check_result (result)
+        return unicode (result)
+
+
+_xmlrpclib = xmlrpcutil.get_xmlrpclib ()
+
+
+class EncryptedXmlrpcTool (cherrypy.Tool):
+
+    def __init__ (self):
+        super (EncryptedXmlrpcTool, self).__init__ (
+            point = 'before_handler',
+            callable = self.run,
+            name = 'encrypted_xmlrpc',
+            priority = 10
+        )
+
+    def _wrapper (self):
+        self._on_error (**self._merged_args ())
+
+    def _setup (self):
+        cherrypy.serving.request.error_response = self._wrapper
+        super (EncryptedXmlrpcTool, self)._setup ()
+
+    def run (self):
+        request = cherrypy.serving.request
+        request.rco_security = request.app.service.security_manager
+
+        path = request.path_info.strip ('/')
+        request.rco_client = path [path.rfind ('/') + 1:]
+        if not request.rco_security.public_key_exists (request.rco_client):
+            raise SecurityError ('Unknown client key', -1001)
+
+        request.rco_encrypted = request.body.read ()
+        request.rco_decrypted = request.rco_security.decrypt (request.rco_encrypted, request.rco_client).encode ('utf-8')
+        request.rco_encrypt_response = True
+
+
+    def _on_error (self):
+        e = sys.exc_info ()[1]
+        if hasattr (e, 'args') and len (e.args) > 1:
+            message = unicode (e.args [0])
+            code = to_int (e.args [1], 1)
+        else:
+            message = '{}: {}'.format (type (e).__name__, unicode (e))
+            code = 1
+        body = _xmlrpclib.dumps (
+            _xmlrpclib.Fault (code, message),
+            methodresponse = 1,
+            encoding = 'utf-8',
+            allow_none = True
+        )
+
+        request = cherrypy.request
+        response = cherrypy.response
+        response.status = '200 OK'
+
+        if getattr (request, 'rco_encrypt_response', False):
+            ct = 'application/pgp-encrypted'
+            body = request.rco_security.encrypt (body, request.rco_client).encode ('utf-8')
+        else:
+            ct = 'text/xml'
+
+        response.headers ['Content-Type'] = ct
+        response.headers ['Content-Length'] = len (body)
+        response.body = body
+
+
+cherrypy.tools.encrypted_xmlrpc = EncryptedXmlrpcTool ()
 
 
 class CryptoInterface (rpc.Controller):
@@ -154,12 +257,7 @@ class CryptoInterface (rpc.Controller):
     '''
 
     _cp_config = {
-        'tools.xmlrpc.on': True,
-        'tools.xmlrpc.allow_none': True,
-        'tools.gpg_in.on': True,
-        'tools.gpg_in.force': True,
-        'tools.gpg_in.target_ct': 'text/xml',
-        'tools.gpg_out.on': True,
+        'tools.encrypted_xmlrpc.on': True
     }
 
     def __init__ (self, security_manager, mount_point = '/'):
@@ -174,18 +272,52 @@ class CryptoInterface (rpc.Controller):
         self._security.connect_interface (self)
 
     def _call_method (self, method, name, args, vpath, parameters):
-        if not self._security.can_execute (self, cherrypy.request._gpg_client_key, name):
+        if not self._security.can_execute (self, name):
             raise SecurityError ('Access denied', -1000)
         return super (CryptoInterface, self)._call_method (method, name, args, vpath, parameters)
+
+    def default (self, *vpath, **params):
+        '''Обработчик по умолчанию'''
+        request = cherrypy.request
+        response = cherrypy.response
+
+        try:
+            rpc_params, rpc_method = _xmlrpclib.loads (request.rco_decrypted)
+        except:
+            request.app.log.error ('Parsing request error', 'RPC', logging.WARNING, True)
+            raise Exception ('Invalid request', -32700)
+
+        method = self._find_method (rpc_method)
+        if method:
+            result = self._call_method (method, rpc_method, rpc_params, vpath, params)
+        else:
+            raise Exception ('Method "{}" not found'.format (rpc_method), -32601)
+
+        body = self._security.encrypt (
+            _xmlrpclib.dumps (
+                (result,),
+                methodresponse = 1,
+                encoding = 'utf-8',
+                allow_none = 1
+            ),
+            request.rco_client
+        )
+
+        response.status = '200 OK'
+        response.headers ['Content-Type'] = 'application/pgp-encrypted'
+        response.headers ['Content-Length'] = len (body)
+        response.body = body
+        return body
+
+    default.exposed = True
 
 
 class MetaInterface (rpc.Controller):
 
     _cp_config = {
+        'tools.encrypted_xmlrpc.on': False,
         'tools.xmlrpc.on': True,
         'tools.xmlrpc.allow_none': True,
-        'tools.gpg_in.on': False,
-        'tools.gpg_out.on': False,
     }
 
     def __init__ (self, security_manager, code = None, version = None, title = None):
@@ -199,39 +331,28 @@ class Service (cherrybase.Application):
         self.package = package
 
         # Готовим конфигурацию
-        self.raw_config = {}
+        raw_config = {}
         _cpconfig.merge (
-            self.raw_config,
+            raw_config,
             config or pkg_resources.resource_filename (package, '__config__/{}.conf'.format (mode))
         )
+        self.service_conf = raw_config.get ('service', {})
 
-        self.code = self.raw_conf_val ('service.code', package)
+        self.code = self.service_config ('code', package)
 
-        gpg_homedir = self.raw_conf_val ('tools.gpg_in.homedir')
-        gpg_key = self.raw_conf_val ('tools.gpg_in.key')
-        gpg_password = self.raw_conf_val ('tools.gpg_in.password')
+        sec_homedir = self.service_config ('security.homedir', require = True)
+        sec_key = self.service_config ('security.key', require = True)
+        sec_password = self.service_config ('security.password', require = True)
 
         # Создаем менеджер безопасности
-        self.security_manager = SecurityManager (self, gpg_homedir, gpg_key, gpg_password)
-
-        # Создаем постоянный клиент для роутинга
-        routing_data = self.raw_conf_val ('routing_service')
-        if routing_data:
-            import client
-            self.routing = client.Server (
-                routing_data [0],
-                routing_data [1],
-                gpg_homedir,
-                gpg_key,
-                gpg_password
-            )
+        self.security_manager = SecurityManager (self, sec_homedir, sec_key, sec_password)
 
         _vhosts = [vhost + basename if vhost.endswith ('.') else vhost for vhost in vhosts]
         # Родительский конструктор
         super (Service, self).__init__ (
             name = self.code,
             vhosts = _vhosts,
-            config = self.raw_config,
+            config = raw_config,
             routes = (
                 ('/', root (self.security_manager), None),
                 (
@@ -239,8 +360,8 @@ class Service (cherrybase.Application):
                     MetaInterface (
                         self.security_manager,
                         code = self.code,
-                        version = self.raw_conf_val ('service.version', '1.0.0'),
-                        title = self.raw_conf_val ('service.title', self.code)
+                        version = self.service_config ('version', '1.0.0'),
+                        title = self.service_config ('title', self.code)
                     ),
                     None
                 ),
@@ -249,8 +370,10 @@ class Service (cherrybase.Application):
         self.main_name = _vhosts [0] + '/'
         self.app.service = self
 
-    def raw_conf_val (self, entry, default = None, path = '/'):
-        return self.raw_config.get (path, {}).get (entry, default)
+    def service_config (self, name, default = None, require = False):
+        if require and name not in self.service_conf:
+            raise KeyError ('Service config value "{}" is not found'.format (name))
+        return self.service_conf.get (name, default)
 
     def url (self, method_name):
         return 'http://{}:{}'.format (self.main_name, method_name)

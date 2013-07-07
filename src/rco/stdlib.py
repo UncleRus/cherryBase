@@ -2,11 +2,10 @@
 
 from cherrybase.rpc import expose
 import cherrypy
+from rco import BaseError
 
-_get_own_key = lambda: cherrypy.serving.request.toolmaps ['tools'].get ('gpg_in', {})['key']
 
-
-class KeyringError (Exception):
+class KeyringError (BaseError):
     pass
 
 
@@ -71,11 +70,15 @@ class Meta (SecurityLib):
         self.version = version
         self.key = None
 
+    def _own_key (self):
+        app = cherrypy.request.app
+        return app.service.service_config ('security.key', require = True)
+
     @expose
     def public_key (self):
         '''Public key of this service'''
         if not self.key:
-            self.key = self._manager.gpg.export_keys (_get_own_key ())
+            self.key = self._manager.gpg.export_keys (self._own_key ())
         return self.key
 
     @expose
@@ -85,5 +88,5 @@ class Meta (SecurityLib):
             'code': self.code,
             'title': self.title,
             'version': self.version,
-            'key_fingerprint': _get_own_key ()
+            'key_fingerprint': self._own_key ()
         }

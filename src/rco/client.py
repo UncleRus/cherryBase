@@ -5,6 +5,7 @@ import cherrybase.tools.gpg
 from StringIO import StringIO
 import cherrypy
 from rco import BaseError
+from . import base
 
 class GpgTransport (xmlrpclib.Transport):
 
@@ -64,10 +65,6 @@ _routes = {
     'logon': ('http://logon.rco:8080/', '55A6F35DC05A3728FB45AA0277EA551D7EAC9ABD')
 }
 
-def _conf_param (param, default = None):
-    app = cherrypy.serving.request.app
-    return app.config.get (param, default)
-
 
 def lookup (service_name, version = None):
     if not cherrypy.request.app:
@@ -83,9 +80,9 @@ def Server (uri, key, gpg_homedir = None, gpg_key = None, gpg_password = None, t
     return xmlrpclib.Server (
         uri = uri,
         transport = GpgTransport (
-            gpg_homedir = gpg_homedir or _conf_param ('tools.gpg_in.homedir'),
-            gpg_key = gpg_key or _conf_param ('tools.gpg_in.key'),
-            gpg_password = gpg_password or _conf_param ('tools.gpg_in.password'),
+            gpg_homedir = gpg_homedir or base.config ('security.homedir', strict = True),
+            gpg_key = gpg_key or base.config ('security.key', strict = True),
+            gpg_password = gpg_password or base.config ('security.password', strict = True),
             gpg_server_key = key,
             headers = headers
         ),

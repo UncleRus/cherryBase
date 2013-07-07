@@ -4,6 +4,16 @@
 import xmlrpclib
 from rco import client
 
+server = client.Server (
+    'http://rpc.cherrybase:8080/',
+    key = '55A6F35DC05A3728FB45AA0277EA551D7EAC9ABD',
+    gpg_homedir = '/home/rus/work/home/cherryBase/src/rpciface/keyring',
+    gpg_key = '55A6F35DC05A3728FB45AA0277EA551D7EAC9ABD',
+    gpg_password = '123321',
+    #ticket = 'TEST_TICKET'
+)
+
+'''
 server = xmlrpclib.Server (
     'http://rpc.cherrybase:8080/',
     allow_none = True,
@@ -14,6 +24,7 @@ server = xmlrpclib.Server (
         gpg_server_key = '55A6F35DC05A3728FB45AA0277EA551D7EAC9ABD',
     )
 )
+'''
 
 print server.system.listMethods ()
 print server.test.hello (u'Миииир!')
