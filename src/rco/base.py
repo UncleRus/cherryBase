@@ -149,6 +149,9 @@ class SecurityManager (object):
 
 
 class CryptoInterface (rpc.Controller):
+    '''
+    Базовый класс для всех шифрованных RPC-интерфейсов
+    '''
 
     _cp_config = {
         'tools.xmlrpc.on': True,

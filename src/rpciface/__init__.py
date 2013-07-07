@@ -14,5 +14,4 @@ def get_applications (mode, basename):
         vhosts = ('rpc.',),
         root = controllers.Root
     )
-    rco.auth.AuthManager (service)
     return service

@@ -4,15 +4,17 @@ import xmlrpclib
 import cherrybase.tools.gpg
 from StringIO import StringIO
 import cherrypy
+from rco import BaseError
 
 class GpgTransport (xmlrpclib.Transport):
 
     user_agent = 'rcolib'
 
-    def __init__ (self, gpg_homedir, gpg_key, gpg_password, gpg_server_key, use_datetime = 0):
+    def __init__ (self, gpg_homedir, gpg_key, gpg_password, gpg_server_key, headers = None, use_datetime = 0):
         xmlrpclib.Transport.__init__ (self, use_datetime)
         self.gpg_server_key = gpg_server_key
         self.gpg = cherrybase.tools.gpg.Encoder (gpg_homedir, gpg_key, gpg_password)
+        self.headers = headers or {}
 
     def send_request (self, connection, handler, request_body):
         xmlrpclib.Transport.send_request (
@@ -23,6 +25,9 @@ class GpgTransport (xmlrpclib.Transport):
         )
 
     def send_content (self, connection, request_body):
+        for header, value in self.headers.items ():
+            if header not in ('Content-Type', 'Content-Length'):
+                connection.putheader (header, value)
         connection.putheader ('Content-Type', 'application/pgp-encrypted')
         encoded = self.gpg.encode (request_body, self.gpg_server_key)
         connection.putheader ('Content-Length', str (len (encoded)))
@@ -50,30 +55,39 @@ class GpgTransport (xmlrpclib.Transport):
         )
 
 
+class LookupError (BaseError):
+    pass
+
+
 # FIXME: Переделать под полноценный роутер
 _routes = {
     'logon': ('http://logon.rco:8080/', '55A6F35DC05A3728FB45AA0277EA551D7EAC9ABD')
 }
 
-_gpg_param = lambda x: cherrypy.serving.request.toolmaps ['tools'].get ('gpg_in', {})[x]
+def _conf_param (param, default = None):
+    app = cherrypy.serving.request.app
+    return app.config.get (param, default)
 
 
 def lookup (service_name, version = None):
     if not cherrypy.request.app:
-        raise RuntimeError ('Cannot lookup outside the request process')
-    # FIXME: Один общий клиент для роутера на сервис для keep-alive
+        raise LookupError ('Cannot lookup outside the request process', -4000)
     # FIXME: Кеширование ответов роутера
-    return _routes [service_name]
+    if service_name in _routes:
+        return _routes [service_name]
+    raise LookupError ('Service "{}, {}" not found'.format (service_name, version), -4001)
 
 
-def Server (uri, key, gpg_homedir = None, gpg_key = None, gpg_password = None):
+def Server (uri, key, gpg_homedir = None, gpg_key = None, gpg_password = None, ticket = None):
+    headers = {'RCO-Ticket': ticket} if ticket else None
     return xmlrpclib.Server (
         uri = uri,
         transport = GpgTransport (
-            gpg_homedir = gpg_homedir or _gpg_param ('homedir'),
-            gpg_key = gpg_key or _gpg_param ('key'),
-            gpg_password = gpg_password or _gpg_param ('password'),
-            gpg_server_key = key
+            gpg_homedir = gpg_homedir or _conf_param ('tools.gpg_in.homedir'),
+            gpg_key = gpg_key or _conf_param ('tools.gpg_in.key'),
+            gpg_password = gpg_password or _conf_param ('tools.gpg_in.password'),
+            gpg_server_key = key,
+            headers = headers
         ),
         allow_none = True
     )
