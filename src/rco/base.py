@@ -11,6 +11,7 @@ from . import stdlib
 from . import _secmodel as mdl
 from cherrypy.lib import xmlrpcutil
 import logging, sys
+from . import BaseError
 
 
 def config (name, default = None, strict = False):
@@ -18,7 +19,7 @@ def config (name, default = None, strict = False):
     return app.service.service_config (name, default, strict)
 
 
-class SecurityError (Exception):
+class SecurityError (BaseError):
     pass
 
 
@@ -151,7 +152,7 @@ class SecurityManager (object):
         if request.app.find_config ('/', 'full_access'):
             return True
         # FIXME: Сделать нормальную проверку
-        return True
+        return False
 
     def public_key_exists (self, key):
         if len (key) < 8:
@@ -285,13 +286,13 @@ class CryptoInterface (rpc.Controller):
             rpc_params, rpc_method = _xmlrpclib.loads (request.rco_decrypted)
         except:
             request.app.log.error ('Parsing request error', 'RPC', logging.WARNING, True)
-            raise Exception ('Invalid request', -32700)
+            raise BaseError ('Invalid request', -32700)
 
         method = self._find_method (rpc_method)
         if method:
             result = self._call_method (method, rpc_method, rpc_params, vpath, params)
         else:
-            raise Exception ('Method "{}" not found'.format (rpc_method), -32601)
+            raise BaseError ('Method "{}" not found'.format (rpc_method), -32601)
 
         body = self._security.encrypt (
             _xmlrpclib.dumps (
