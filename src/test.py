@@ -10,7 +10,7 @@ server = client.Server (
     gpg_homedir = '/home/rus/work/home/cherryBase/src/rpciface/keyring',
     gpg_key = '55A6F35DC05A3728FB45AA0277EA551D7EAC9ABD',
     gpg_password = '123321',
-    #ticket = 'TEST_TICKET'
+    ticket = 'TEST_TICKET'
 )
 
 '''

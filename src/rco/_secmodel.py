@@ -11,4 +11,8 @@ class Rights (Base):
     __tablename__ = 'rights'
 
     fingerprint = sas.Column (sat.String (50), primary_key = True, nullable = False)
-    method = sas.Column (sat.Text, nullable = False)
+    method = sas.Column (sat.Text, primary_key = True, nullable = False)
+
+    def __init__ (self, fingerprint, method):
+        self.fingerprint = fingerprint
+        self.method = method

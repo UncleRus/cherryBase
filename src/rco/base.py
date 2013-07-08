@@ -12,6 +12,7 @@ from . import _secmodel as mdl
 from cherrypy.lib import xmlrpcutil
 import logging, sys
 from . import BaseError
+#import sqlalchemy.sql as sas
 
 
 def config (name, default = None, strict = False):
@@ -40,8 +41,6 @@ class SecurityManager (object):
     }
 
     pool_name_format = '__{}__security_manager__'
-
-    use_orm = None
 
     def __init__ (self, service, gpg_homedir, gpg_key, gpg_password):
         self.service = service
@@ -101,12 +100,31 @@ class SecurityManager (object):
                 raise SecurityError ('Cannot manipulate my own key: {}'.format (self.key), -2000)
         return keys
 
+    def _prepare_methods (self, methods):
+        return [methods] if isinstance (methods, basestring) else methods
+
     def connect_interface (self, iface):
         if not isinstance (iface, CryptoInterface):
             raise ValueError ('Interface is not instance of rco.CryptoInterface')
         self.ifaces [iface._mount_point] = iface.system.methods.keys ()
 
     def grant (self, methods, keys):
+        '''
+        session = orm.catalog.get (self.pool_name)
+        keys = self._prepare_keys (keys)
+        for method in self._prepare_methods (methods):
+            for key in keys:
+                if session.query (mdl.Rights).filter (
+                        sas.and_ (
+                            mdl.Rights.fingerprint == key,
+                            sas.or_ (
+                                sas.and_ (~mdl.Rights.method.endswith ('.'), mdl.Rights.method == method),
+                                sas.and_ (mdl.Rights.method.endswith ('.'), sas.literal (method).startswith (mdl.Rights.method))
+                            )
+                        )
+                    ).count () == 0:
+                    session.add (mdl.Rights (key, method))
+        '''
         # FIXME: Убрать заглушку
         pass
 
@@ -189,6 +207,7 @@ _xmlrpclib = xmlrpcutil.get_xmlrpclib ()
 
 
 class EncryptedXmlrpcTool (cherrypy.Tool):
+    '''Инструмент для замены tools.xmlrpc в криптоинтерфейсах'''
 
     def __init__ (self):
         super (EncryptedXmlrpcTool, self).__init__ (
@@ -256,7 +275,6 @@ class CryptoInterface (rpc.Controller):
     '''
     Базовый класс для всех шифрованных RPC-интерфейсов
     '''
-
     _cp_config = {
         'tools.encrypted_xmlrpc.on': True
     }
