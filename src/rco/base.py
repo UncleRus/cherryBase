@@ -152,7 +152,7 @@ class SecurityManager (object):
         if request.app.find_config ('/', 'full_access'):
             return True
         # FIXME: Сделать нормальную проверку
-        return False
+        return True
 
     def public_key_exists (self, key):
         if len (key) < 8:
@@ -285,7 +285,7 @@ class CryptoInterface (rpc.Controller):
         try:
             rpc_params, rpc_method = _xmlrpclib.loads (request.rco_decrypted)
         except:
-            request.app.log.error ('Parsing request error', 'RPC', logging.WARNING, True)
+            request.app.log.error ('Invalid request', 'RPC', logging.WARNING, True)
             raise BaseError ('Invalid request', -32700)
 
         method = self._find_method (rpc_method)

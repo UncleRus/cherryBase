@@ -7,6 +7,9 @@ from cherrypy._cpcompat import ntou
 from cherrypy._cpreqbody import RequestBody, SizedReader
 from cStringIO import StringIO
 
+class GpgError (Exception):
+    pass
+
 class Encoder (object):
     '''
     Обертка для GPG
@@ -20,7 +23,7 @@ class Encoder (object):
     def _check_result (self, result):
         if getattr (result, 'ok', False):
             return
-        raise RuntimeError ('\n'.join ([line for line in getattr (result, 'stderr', 'gpg: {}'.format (getattr (result, 'status', 'Unknown error'))).splitlines () if line.startswith ('gpg: ')]))
+        raise GpgError ('\n'.join ([line for line in getattr (result, 'stderr', 'gpg: {}'.format (getattr (result, 'status', 'Unknown error'))).splitlines () if line.startswith ('gpg: ')]))
 
     def public_key_exists (self, key):
         if len (key) < 8:

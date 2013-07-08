@@ -6,6 +6,7 @@ import rco
 class TestLibrary (object):
 
     @rpc.expose
+    @rco.tickets.use ()
     def hello (self, who):
         return 'Hello ' + who
 

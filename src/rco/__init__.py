@@ -6,12 +6,9 @@ class BaseError (Exception):
         super (BaseError, self).__init__ (message, code)
 
 
-from . import base, client
+from . import base, client, tickets
 from base import CryptoInterface, MetaInterface, SecurityError, SecurityManager, Service
 
 import cherrypy
 toolbox = cherrypy.tools
-
-from .tools import TicketAuth
-toolbox.ticket_auth = TicketAuth ()
 
