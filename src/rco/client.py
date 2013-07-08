@@ -9,7 +9,7 @@ from . import base
 
 class GpgTransport (xmlrpclib.Transport):
 
-    user_agent = 'rcolib'
+    user_agent = 'rco.client'
 
     def __init__ (self, gpg_homedir, gpg_key, gpg_password, gpg_server_key, headers = None, use_datetime = 0):
         xmlrpclib.Transport.__init__ (self, use_datetime)
@@ -26,6 +26,7 @@ class GpgTransport (xmlrpclib.Transport):
         )
 
     def send_content (self, connection, request_body):
+        # FIXME: Определять ACCEPT-ENCODING: gzip сервера и сжимать пост
         for header, value in self.headers.items ():
             if header not in ('Content-Type', 'Content-Length'):
                 connection.putheader (header, value)
