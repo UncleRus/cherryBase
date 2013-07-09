@@ -5,6 +5,7 @@ from cherrybase.utils import to_int
 from rco import BaseError, client
 import time
 import logging
+import functools
 
 
 _max_cache_size = 10000
@@ -67,7 +68,7 @@ def _check_ticket (strict, revoke_callback):
             )
         )
     except Exception as e:
-        request.app.log ('Cannot check ticket {}'.format (tid), 'RCO.AUTH', severity = logging.ERROR, traceback = True)
+        request.app.log.error ('Cannot check ticket "{}" '.format (tid), 'RCO.AUTH', severity = logging.ERROR, traceback = True)
         args = getattr (e, 'args', [None, 1])
         if len (args) < 2 or to_int (args [1], 1) != -3500:
             raise AuthError ('Cannot check your ticket: {}'.format (e))
@@ -86,6 +87,7 @@ def revoke (tid):
 
 def use (strict = True, revoke_callback = 'callback.auth.revoke'):
     def wrap (method):
+        @functools.wraps (method)
         def wrapped (*args, **kwargs):
             _check_ticket (strict, revoke_callback)
             return method (*args, **kwargs)

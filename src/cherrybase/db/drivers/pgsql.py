@@ -4,6 +4,7 @@ import psycopg2.extras
 import psycopg2.pool
 from ..base import ShortcutsMixin
 
+
 class _Connection (psycopg2.extensions.connection, ShortcutsMixin):
 
     _encoding = 'utf8'

@@ -3,6 +3,7 @@
 import cherrypy
 from cherrybase.utils import AttributeDict
 
+
 class ConfigNamespace (object):
     '''
     Класс-утилита для чтения конфигурации

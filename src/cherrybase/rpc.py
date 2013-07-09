@@ -8,6 +8,7 @@ import sys
 from . import utils
 import logging
 
+
 def _on_error (*args, **kwargs):
     e = sys.exc_info ()[1]
     if hasattr (e, 'args') and len (e.args) > 1:

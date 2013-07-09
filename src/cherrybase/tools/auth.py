@@ -6,6 +6,7 @@ from urllib import urlencode
 from cherrybase.utils import set_cookie, get_cookie, match_list
 import hashlib
 
+
 class BaseUser (object):
     '''
     Базовый класс пользователя системы. Все конкретные реализации должны
@@ -181,6 +182,7 @@ def _config (param, default = None):
 
 
 from cherrybase.forms import controls, rules
+
 
 class AuthController (object):
     '''

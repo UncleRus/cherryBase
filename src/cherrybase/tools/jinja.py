@@ -4,6 +4,7 @@ import cherrypy
 from cherrypy._cptools import Tool
 import jinja2
 
+
 class JinjaHandler (cherrypy.dispatch.LateParamPageHandler):
     '''
     Рендерер шаблонов

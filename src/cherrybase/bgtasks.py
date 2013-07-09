@@ -6,6 +6,7 @@ import Queue
 import logging
 from threading import Timer
 
+
 class TasksQueue (SimplePlugin):
 
     def __init__ (self, bus, queue_size = 100, timeout = 2):

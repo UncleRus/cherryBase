@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 
 from cherrybase.utils import PoolsCatalog
+import functools
+
 
 catalog = PoolsCatalog ('DB')
+
 
 def use_db (pool_name = 'default', autocommit = True, position = 1):
     '''
@@ -10,6 +13,7 @@ def use_db (pool_name = 'default', autocommit = True, position = 1):
     Ссылка добавляется на позицию position в списке параметров, 0 - первый параметр.
     '''
     def _wrap (method):
+        @functools.wraps (method)
         def _wrapped (*args, **kwargs):
             global catalog
             connection = catalog.get (pool_name)
@@ -47,8 +51,10 @@ class ShortcutsMixin (object):
 
 import threading
 
+
 class PoolError (Exception):
     pass
+
 
 class ThreadedPool (object):
 
