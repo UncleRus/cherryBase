@@ -11,7 +11,6 @@ def get_applications (mode, basename):
         package = __package__,
         basename = basename,
         mode = mode,
-        vhosts = ('rpc.',),
         root = controllers.Root
     )
     return service
