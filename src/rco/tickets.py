@@ -36,7 +36,7 @@ class Ticket (object):
 def _get_tickets ():
     app = cherrypy.serving.request.app
     if not hasattr (app, 'service'):
-        raise AuthError ('tickets can work with service only', -3100)
+        raise AuthError ('Tickets cannot work without service', -3100)
     if not hasattr (app.service, 'tickets'):
         app.service.tickets = {}
     return app.service.tickets

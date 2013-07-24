@@ -12,12 +12,27 @@ from . import _secmodel as mdl
 from cherrypy.lib import xmlrpcutil
 import logging, sys
 from . import BaseError
-#import sqlalchemy.sql as sas
 
 
 def config (name, default = None, strict = False):
     app = cherrypy.request.app
     return app.service.service_config (name, default, strict)
+
+
+def prepare_config (conf, package):
+    pkg_path = pkg_resources.resource_filename (package, '')
+    if isinstance (conf, list):
+        for item in conf:
+            if isinstance (item, basestring):
+                item = item.format (PKG_PATH = pkg_path, PKG_NAME = package)
+            elif isinstance (item, (dict, list)):
+                prepare_config (item, package)
+    elif isinstance (conf, dict):
+        for key in conf:
+            if isinstance (conf [key], basestring):
+                conf [key] = conf [key].format (PKG_PATH = pkg_path, PKG_NAME = package)
+            elif isinstance (conf [key], (dict, list)):
+                prepare_config (conf [key], package)
 
 
 class SecurityError (BaseError):
@@ -67,12 +82,7 @@ class SecurityManager (object):
             database = service.service_config ('security_manager.db_filename', ':memory:')
         )
         # Обертываем подключения в ORM
-        orm.catalog [self.pool_name] = alchemy.SqlAlchemy (
-            db_pool_name = self.pool_name,
-            engine_url = 'sqlite://',
-            pool_size = min_conn,
-            pool_max_overflow = max_conn
-        )
+        alchemy.auto_wrapper (self.pool_name)
         # Достаем сессию алхимии из пула и создаем структуру БД
         session = orm.catalog.get (self.pool_name)
         mdl.Base.metadata.create_all (session.bind)
@@ -229,7 +239,7 @@ class EncryptedXmlrpcTool (cherrypy.Tool):
         request.rco_security = request.app.service.security_manager
 
         path = request.path_info.strip ('/')
-        request.rco_client = path [path.rfind ('/') + 1:]
+        request.rco_client = path [path.rfind ('/') + 1:].upper ()
         if not request.rco_security.public_key_exists (request.rco_client):
             raise SecurityError ('Unknown client key', -1001)
 
@@ -346,18 +356,29 @@ class MetaInterface (rpc.Controller):
 
 class Service (cherrybase.Application):
 
-    def __init__ (self, package, basename, mode, vhosts, root = CryptoInterface, config = None):
+    def __init__ (self, package, basename, mode, root = None, config = None):
         self.package = package
 
         # Готовим конфигурацию
-        raw_config = {}
+        raw_config = {
+            '/' : {
+                'tools.encode.on': True,
+                'tools.gzip.on': True,
+                'tools.gzip.mime_types': ['text/*', 'application/pgp-encrypted']
+            }
+        }
         _cpconfig.merge (
             raw_config,
             config or pkg_resources.resource_filename (package, '__config__/{}.conf'.format (mode))
         )
+        prepare_config (raw_config, package)
+
         self.service_conf = raw_config.get ('service', {})
 
         self.code = self.service_config ('code', package)
+        self.vhosts = self.service_config ('vhosts', [self.code + '.'])
+        if isinstance (self.vhosts, basestring):
+            self.vhosts = [self.vhosts]
 
         sec_homedir = self.service_config ('security.homedir', require = True)
         sec_key = self.service_config ('security.key', require = True)
@@ -366,28 +387,30 @@ class Service (cherrybase.Application):
         # Создаем менеджер безопасности
         self.security_manager = SecurityManager (self, sec_homedir, sec_key, sec_password)
 
-        _vhosts = [vhost + basename if vhost.endswith ('.') else vhost for vhost in vhosts]
+        _vhosts = [vhost + basename if vhost.endswith ('.') else vhost for vhost in self.vhosts]
         # Родительский конструктор
         super (Service, self).__init__ (
             name = self.code,
             vhosts = _vhosts,
-            config = raw_config,
-            routes = (
-                ('/', root (self.security_manager), None),
-                (
-                    '/meta',
-                    MetaInterface (
-                        self.security_manager,
-                        code = self.code,
-                        version = self.service_config ('version', '1.0.0'),
-                        title = self.service_config ('title', self.code)
-                    ),
-                    None
-                ),
-            )
+            config = raw_config
         )
+        if root:
+            self.tree.add ('/', root (self.security_manager))
+            self.add_meta ()
+
         self.main_name = _vhosts [0] + '/'
         self.app.service = self
+
+    def add_meta (self):
+        self.tree.add (
+            '/meta',
+            MetaInterface (
+                self.security_manager,
+                code = self.code,
+                version = self.service_config ('version', '1.0.0'),
+                title = self.service_config ('title', self.code)
+            )
+        )
 
     def service_config (self, name, default = None, require = False):
         if require and name not in self.service_conf:

@@ -3,16 +3,24 @@
 
 import xmlrpclib
 from rco import client
+import sys
 
 server = client.Server (
-    'http://rpc.cherrybase:8080/',
+    'http://router.cherrybase:8080/',
     key = '55A6F35DC05A3728FB45AA0277EA551D7EAC9ABD',
     gpg_homedir = '/home/rus/work/home/cherryBase/src/rpciface/keyring',
     gpg_key = '55A6F35DC05A3728FB45AA0277EA551D7EAC9ABD',
     gpg_password = '123321',
     ticket = 'TEST_TICKET'
 )
+print server.system.listMethods ()
+server.routing.naming.register ('http://router.cherrybase:8080/')
+print server.routing.naming.lookup ('router')
+server.routing.naming.unregister ('http://router.cherrybase:8080/')
 
+
+
+sys.exit ()
 '''
 server = xmlrpclib.Server (
     'http://rpc.cherrybase:8080/',

@@ -49,6 +49,31 @@ class SqlAlchemy (object):
         pass
 
 
+_engines = {
+    'PgSql': 'postgresql://',
+    'MySql': 'mysql://',
+    'Sqlite': 'sqlite://',
+}
+
+
+def auto_wrapper (db_pool_name):
+    '''
+    Автоматическое создание ORM вокруг пула БД
+    '''
+    if db_pool_name not in db.catalog:
+        raise KeyError ('Unknown db pool "{}"'.format (db_pool_name))
+
+    from ..base import catalog
+
+    db_pool = db.catalog [db_pool_name]
+    catalog [db_pool_name] = SqlAlchemy (
+        db_pool_name = db_pool_name,
+        engine_url = _engines [db_pool.__class__.__name__],
+        pool_size = db_pool.min_connections,
+        pool_max_overflow = db_pool.max_connections,
+    )
+
+
 logger = logging.getLogger ('sqlalchemy.engine')
 if config.log_filename:
     logger.addHandler (TimedRotatingFileHandler (config.log_filename, 'midnight'))

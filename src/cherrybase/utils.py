@@ -129,6 +129,7 @@ class PoolsCatalog (object):
                 return
             raise ValueError ('Duplicate pool {}'.format (name))
         self.pools [name] = pool
+        cherrypy.log.error ('Pool "{}" created'.format (name), self.log_context, logging.INFO)
 
     def __getitem__ (self, name):
         return self.pools [name]

@@ -7,7 +7,7 @@ class BaseError (Exception):
 
 
 from . import base, client, tickets
-from base import CryptoInterface, MetaInterface, SecurityError, SecurityManager, Service
+from base import CryptoInterface, MetaInterface, SecurityError, SecurityManager, Service, Namespace
 
 import cherrypy
 toolbox = cherrypy.tools
