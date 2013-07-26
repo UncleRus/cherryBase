@@ -2,7 +2,7 @@
 
 from cherrybase import rpc
 import rco
-import cherrypy
+#import cherrypy
 
 class TestLibrary (object):
 
@@ -12,9 +12,13 @@ class TestLibrary (object):
         return 'Hello ' + who
 
     @rpc.expose
+    def free_hello (self, who):
+        return 'Hello ' + who
+
+    @rpc.expose
     def naming (self):
-        service = cherrypy.request.app.service
-        return service.naming.lookup ('test_service')
+        #app = cherrypy.request.app
+        return rco.client.get_service ('test_service').test.free_hello ('double!!!!!')
 
 
 class Root (rco.CryptoInterface):

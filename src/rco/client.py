@@ -65,7 +65,7 @@ def lookup (code, version):
     if not request.app:
         raise LookupError ('Cannot execute simple lookup outside the request process', -4001)
     result = request.app.service.naming.lookup (code, version)
-    return result.url, result.fingerprint
+    return result [0:2]
 
 
 def Server (uri, key, gpg_homedir = None, gpg_key = None, gpg_password = None, ticket = None):
@@ -83,7 +83,7 @@ def Server (uri, key, gpg_homedir = None, gpg_key = None, gpg_password = None, t
     )
 
 
-def get_service (service_code, version = None):
-    uri, key = lookup (service_code, version)
-    return Server (uri, key)
+def get_service (service_code, version = None, ticket = None):
+    url, key = lookup (service_code, version)
+    return Server (url, key)
 
