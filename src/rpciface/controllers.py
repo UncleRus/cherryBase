@@ -2,6 +2,7 @@
 
 from cherrybase import rpc
 import rco
+import cherrypy
 
 class TestLibrary (object):
 
@@ -9,6 +10,11 @@ class TestLibrary (object):
     @rco.tickets.use ()
     def hello (self, who):
         return 'Hello ' + who
+
+    @rpc.expose
+    def naming (self):
+        service = cherrypy.request.app.service
+        return service.naming.lookup ('test_service')
 
 
 class Root (rco.CryptoInterface):

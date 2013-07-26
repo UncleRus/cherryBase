@@ -15,10 +15,9 @@ class NamingEntry (object):
     def __init__ (self, code, security_manager, raw_entry):
         self.code = code
         self.security_manager = security_manager
-        self.url, self.version, self.fingerprint = raw_entry
+        self.url, self.fingerprint, self.version = raw_entry
         self.timestamp = time.time ()
         self.parsed_version = parse_version (self.version or '0.0.0')
-
 
     def valid (self, cache_time):
         return time.time () - self.timestamp < cache_time
@@ -29,7 +28,16 @@ class NamingEntry (object):
             and self.security_manager.public_key_exists (self.fingerprint)
 
     def dump (self):
-        return (self.url, self.version, self.fingerprint)
+        return (self.url, self.fingerprint, self.version)
+
+    def __repr__ (self):
+        return '<NamingEntry code={}, url={}, version={}, fingerprint={}, timestamp={}>'.format (
+            self.code,
+            self.url,
+            self.version,
+            self.fingerprint,
+            self.timestamp
+        )
 
 
 class NamingProxy (object):
@@ -44,16 +52,16 @@ class NamingProxy (object):
             self.security_manager,
             [
                 service.service_config ('naming.routing_url', strict = True),
-                None,
                 service.service_config ('naming.routing_fingerprint', strict = True),
+                None,
             ]
         )
         self.router = client.Server (
             uri = self.routing_entry.url,
             key = self.routing_entry.fingerprint,
-            gpg_homedir = service.service_config ('security.homedir', strict = True),
-            gpg_key = service.service_config ('security.key', strict = True),
-            gpg_password = service.service_config ('security.password', strict = True)
+            gpg_homedir = self.security_manager.homedir,
+            gpg_key = self.security_manager.key,
+            gpg_password = self.security_manager.password
         )
         if service.service_config ('naming.autoregister', False):
             engine = cherrypy.engine
@@ -78,16 +86,16 @@ class NamingProxy (object):
         if code == 'routing':
             return self.routing_entry.dump ()
 
-        version = parse_version (version or '0.0.0')
+        parsed_version = parse_version (version or '0.0.0')
 
         self.cleanup ()
 
-        result = self.find (code, version)
+        result = self.find (code, parsed_version)
         if not result:
             self.cache.extend (
                 [NamingEntry (code, self.security_manager, raw) for raw in self.router.routing.naming.lookup (code, version)]
             )
-        result = self.find (code, version)
+        result = self.find (code, parsed_version)
         if not result:
             raise LookupError ('Service "{}, {}" not found'.format (code, version), -4001)
         return result [0].dump ()
@@ -96,4 +104,4 @@ class NamingProxy (object):
         self.router.routing.naming.register (self.own_url)
 
     def unregister (self):
-        self.router.routing.naming.unregister (self.owm_url)
+        self.router.routing.naming.unregister (self.own_url)

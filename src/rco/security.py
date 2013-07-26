@@ -46,6 +46,7 @@ class Manager (object):
     def __init__ (self, service, gpg_homedir, gpg_key, gpg_password):
         self.service = service
         self.gpg = gnupg.GPG (gnupghome = gpg_homedir)
+        self.homedir = gpg_homedir
         self.key = gpg_key
         self.password = gpg_password
         self.ifaces = {}
