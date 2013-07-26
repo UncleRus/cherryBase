@@ -4,8 +4,7 @@ import xmlrpclib
 import cherrybase.tools.gpg
 from StringIO import StringIO
 import cherrypy
-from rco import BaseError
-from . import base
+from . import base, _xmlrpclib
 
 class GpgTransport (xmlrpclib.Transport):
 
@@ -61,28 +60,17 @@ class GpgTransport (xmlrpclib.Transport):
             return xmlrpclib.Transport.parse_response (self, StringIO (u''.join (encoded).encode ('utf-8')))
 
 
-class LookupError (BaseError):
-    pass
-
-
-# FIXME: Переделать под полноценный роутер
-_routes = {
-    'logon': ('http://logon.rco:8080/', '55A6F35DC05A3728FB45AA0277EA551D7EAC9ABD')
-}
-
-
-def lookup (service_name, version = None):
-    if not cherrypy.request.app:
-        raise LookupError ('Cannot lookup outside the request process', -4000)
-    # FIXME: Кеширование ответов роутера
-    if service_name in _routes:
-        return _routes [service_name]
-    raise LookupError ('Service "{}, {}" not found'.format (service_name, version), -4001)
+def lookup (code, version):
+    request = cherrypy.serving.request
+    if not request.app:
+        raise LookupError ('Cannot execute simple lookup outside the request process', -4001)
+    result = request.app.service.naming.lookup (code, version)
+    return result.url, result.fingerprint
 
 
 def Server (uri, key, gpg_homedir = None, gpg_key = None, gpg_password = None, ticket = None):
     headers = {'RCO-Ticket': ticket} if ticket else None
-    return xmlrpclib.Server (
+    return _xmlrpclib.Server (
         uri = uri,
         transport = GpgTransport (
             gpg_homedir = gpg_homedir or base.config ('security.homedir', strict = True),
@@ -95,7 +83,7 @@ def Server (uri, key, gpg_homedir = None, gpg_key = None, gpg_password = None, t
     )
 
 
-def get_service (service_name, version = None):
-    uri, key = lookup (service_name, version)
+def get_service (service_code, version = None):
+    uri, key = lookup (service_code, version)
     return Server (uri, key)
 

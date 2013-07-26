@@ -72,7 +72,7 @@ class Meta (SecurityLib):
 
     def _own_key (self):
         app = cherrypy.request.app
-        return app.service.service_config ('security.key', require = True)
+        return app.service.service_config ('security.key', strict = True)
 
     @expose
     def public_key (self):
