@@ -25,20 +25,34 @@ class JinjaHandler (cherrypy.dispatch.LateParamPageHandler):
         tpl_globals.update ({'cherrypy': cherrypy})
         self.env.globals.update (tpl_globals)
 
-        response ['__template__'] = response.get ('__template__', getattr (cherrypy.serving.request, '_jinja_template', self.template))
+        response ['__template__'] = response.get ('__template__', getattr (cherrypy.serving.response, '__template__', self.template))
         return self.env.get_template (response ['__template__']).render (response)
 
 
 class JinjaTool (Tool):
     '''
-    Инструмент шаблонизации. Контроллеры, использующие инструмент,
-    должны возвращать dict. 
-    Результат контроллера с индексом '__globals__' передается в шаблон
+    Инструмент шаблонизации. Доступен под именем `cherrypy.tools.jinja`.
+    Контроллеры, использующие инструмент, должны возвращать dict. 
+    Результат контроллера с индексом `'__globals__'` передается в шаблон
     как глобальное окружение.
-    Результат контроллера может содержать строку с индексом '__template__',
-    в которой перекрывается имя шаблона.
-    Также имя шаблона может быть перекрыто путем установки атрибута
-    cherrypy.request._jinja_template
+    Порядок поиска имени шаблона:
+        
+        - индекс результата контроллера `'__template__'`
+        - атрибут `cherrypy.response.__template__`
+        - параметр `'tools.jinja.template'` (параметр template декоратора)
+        - если ни один из предыдущих способов не определил имя шаблон, оно 
+            по умолчанию равно `'{url}.tpl'`, например при URL '/some/web/page/'
+            имя шаблона будет равно 'some/web/page.tpl'
+        - в шаблон его имя (прочитанное или установленное по умолчанию)
+            передается под именем `__template__`
+    
+    Параметры инструмента:
+        
+        :template: Имя шаблона, при отсутствии имя шаблона будет построено автоматически.
+        :loader: Объект класса-загрузчика шаблонов, например jinja2.FileSystemLoader.
+        :newline_sequence: Последовательность символов, завершающая строку. Должна принимать
+            одно из трех допустимых значений: `'\r'`, `'\n'` или `'\r\n'`.
+        
     '''
     def __init__ (self):
         super (JinjaTool, self).__init__ (

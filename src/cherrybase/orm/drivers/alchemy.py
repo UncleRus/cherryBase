@@ -56,7 +56,7 @@ _engines = {
 }
 
 
-def auto_wrapper (db_pool_name):
+def wrap (db_pool_name):
     '''
     Автоматическое создание ORM вокруг пула БД
     '''

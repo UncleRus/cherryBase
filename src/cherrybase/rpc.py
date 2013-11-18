@@ -13,7 +13,7 @@ def _on_error (*args, **kwargs):
     e = sys.exc_info ()[1]
     if hasattr (e, 'args') and len (e.args) > 1:
         message = unicode (e.args [0])
-        code = utils.to_int (e.args [1], 1)
+        code = utils.to (int, e.args [1], 1)
     else:
         message = '{}: {}'.format (type (e).__name__, unicode (e))
         code = 1
@@ -88,9 +88,11 @@ class Controller (object):
 
     def _call_method (self, method, name, args, vpath = None, parameters = None):
         '''Можно перекрыть в наследнике и переопределить поведение, например, проверить права и т.п.'''
-        cherrypy.log.error ('call {}:{}'.format ('/'.join (vpath), name), 'RPC', logging.DEBUG)
+        request = cherrypy.request
+        request.app.log.error  ('call {}:{} {}'.format ('/'.join (vpath), name, args), 'RPC', logging.DEBUG)
         return method (*args)
 
+    @cherrypy.expose
     def default (self, *vpath, **params):
         '''Обработчик по умолчанию'''
         cherrypy.request.body.fp.bytes_read = 0
@@ -116,4 +118,3 @@ class Controller (object):
             conf.get ('allow_none', 0)
         )
         return cherrypy.serving.response.body
-    default.exposed = True

@@ -39,20 +39,20 @@ def main ():
         author_email = 'unclerus@gmail.com',
         url = 'https://github.com/UncleRus/cherryBase',
         license = 'BSD',
-        scripts = ['bin/cherrybased'],
+        scripts = ['scripts/cherrybased'],
         packages = [
             'cherrybase',
             'cherrybase.db',
             'cherrybase.db.drivers',
             'cherrybase.tools',
+            'cherrybase.tools.auth',
             'cherrybase.orm',
             'cherrybase.orm.drivers',
-            'cherrybase.forms',
         ],
-        data_files = [
-            ('bin', ['bin/cherrybased'])
-        ],
-        install_requires = ['CherryPy >= 3.2', 'python-gnupg >= 0.3.5']
+        #data_files = [
+        #    ('bin', ['bin/cherrybased'])
+        #],
+        install_requires = ['CherryPy >= 3.2', 'python-gnupg >= 0.3.6']
     )
 
 

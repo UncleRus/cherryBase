@@ -1,0 +1,60 @@
+#!/bin/bash
+
+DIR=/home/rus/work/home/rfid
+
+
+EXECUTABLE=$DIR/cherrybased
+CONFIG=$DIR/cherrybased.conf
+PIDFILE=/var/run/cherrybase.pid
+
+export PYTHONPATH=$PYTHONPATH:$DIR/src
+
+is_running()
+{
+	[ ! -e $PIDFILE ] && return 1
+	[ -d "/proc/$(cat $PIDFILE)" ] && return 0
+	return 1
+}
+
+stop()
+{
+	[ ! -e $PIDFILE ] && return 1
+	local pid=$(cat $PIDFILE)
+	kill -TERM $pid
+	while test -d "/proc/$pid"; do
+		sleep 0.5
+	done
+	rm -f $PIDFILE
+}
+
+start()
+{
+	$EXECUTABLE --config="$CONFIG" --mode=production --pid=$PIDFILE
+}
+
+case "$1" in
+	start)
+		if is_running; then
+			echo "Cherrybase is running already, exiting."
+		else
+			echo -n "Starting cherrybase... "
+			start
+			echo "Done."
+		fi
+		;;
+	stop)
+		echo -n "Stopping cherrybase... "
+		stop
+		echo "Done."
+		;;
+	restart)
+		echo -n "Restarting cherrybase... "
+		stop
+		start
+		echo "Done."
+		;;
+	*)
+		echo "Usage: cherrybased (start|stop|restart)"
+esac
+
+

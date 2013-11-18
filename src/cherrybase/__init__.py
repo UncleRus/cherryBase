@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-__version__ = '0.2.2'
+__version__ = '0.2.8'
 
 import cherrypy
 
@@ -18,7 +18,7 @@ toolbox.gpg_out = GpgOut ()
 from tools.jinja import JinjaTool
 toolbox.jinja = JinjaTool ()
 
-from tools.auth import AuthTool, BaseUser, AuthController
+from tools.auth import AuthTool, BaseUser
 toolbox.auth = AuthTool ()
 
 from base import Application, Server, _server_conf as server_conf

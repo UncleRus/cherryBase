@@ -15,8 +15,7 @@ class BaseUser (object):
     _session_key = '_cb_auth_data'
 
     def __init__ (self, guest_login = 'guest', guest_profile = {'name': 'Guest'},
-            login_cookie = 'login', hash_cookie = 'hash'
-        ):
+            login_cookie = 'login', hash_cookie = 'hash'):
         self._guest_login = guest_login
         self._guest_profile = guest_profile
         self._login_cookie = login_cookie
@@ -70,9 +69,8 @@ class BaseUser (object):
         '''
         Создание хеша пароля для пользователя. Должен быть перекрыт в наследнике.
         
-        Args:
-            login (unicode): Логин пользователя
-            password (unicode): Пароль пользователя
+        :param login: Логин пользователя
+        :param password: Пароль пользователя
         '''
         return hashlib.sha1 (password).hexdigest ()
 
@@ -80,12 +78,10 @@ class BaseUser (object):
         '''
         Поиск профиля пользователя по логину и хешу пароля. Должен быть перекрыт в наследнике.
         
-        Args:
-            login (unicode): Логин пользователя
-            hash (unicode): Хеш пароля
-        
-        Returns:
-            (dict) Профиль пользователя
+        :param login: Логин пользователя
+        :param hash: Хеш пароля
+        :rtype: dict
+        :return: Профиль пользователя
         '''
         return {'name': 'Basic User'}
 
@@ -99,8 +95,7 @@ class BaseUser (object):
         '''
         Установка кук с данными пользователя.
         
-        Args:
-            max_age (int): Срок хранения кук в секундах
+        :param max_age: Срок хранения кук в секундах
         '''
         set_cookie (self._login_cookie, self.login, max_age_seconds = max_age)
         set_cookie (self._hash_cookie, self.hash, max_age_seconds = max_age)
@@ -119,9 +114,8 @@ class BaseUser (object):
         '''
         Вход в систему по имени пользователя/хешу
         
-        Args:
-            login (unicode): Логин пользователя
-            hash (unicode): Хеш пароля
+        :param login: Логин пользователя
+        :param hash: Хеш пароля
         '''
         if not self.is_guest ():
             self.logoff ()
@@ -140,9 +134,8 @@ class BaseUser (object):
         будет автоматически выполнен выход из системы. При неудачной попытке
         входа пользователь останется гостем.
         
-        Args:
-            login (str): логин пользователя
-            password (str): пароль пользователя
+        :param login: Логин пользователя
+        :param password: Пароль пользователя
         '''
         self._logon_by_hash (login, self.create_hash (login, password))
         cherrypy.session.regenerate ()
@@ -151,8 +144,7 @@ class BaseUser (object):
         '''
         Проверка наличия прав пользователя на указанный URL
         
-        Args:
-            url (str): URL
+        :param url: URL
         
         Returns:
             True, если пользователь имеет право доступа к указанному URL
@@ -167,8 +159,8 @@ def current_user ():
     '''
     Получение текущего пользователя из request.
     
-    Returns:
-        :class:BaseUser текущий пользователь или None, если авторизация отключена
+    :rtype: BaseUser
+    :return: Текущий пользователь или None, если авторизация отключена
     '''
     try:
         return cherrypy.request._auth_user
@@ -181,64 +173,11 @@ def _config (param, default = None):
     return conf.get (param, default)
 
 
-from cherrybase.forms import controls, rules
-
-
-class AuthController (object):
-    '''
-    Контроллер авторизации пользователей
-    '''
-    @cherrypy.expose
-    @cherrypy.tools.jinja ()
-    def logon (self, **kwargs):
-        user = current_user ()
-        if not user:
-            raise cherrypy.HTTPError (500, 'Current user is not defined')
-
-        after_logon = _config ('after_logon', '/')
-        if not user.is_guest ():
-            raise cherrypy.HTTPRedirect (after_logon)
-
-        form = controls.Form ('logon_form', submit = 'Login')
-        group_box = controls.GroupBox ('group_box', form, caption = 'Logon')
-        e_login = controls.Edit ('login', group_box, caption = 'Login')
-        rules.Required (e_login, 'Enter your login')
-        e_password = controls.Edit ('password', group_box, caption = 'Password', is_password = True)
-        e_remember = controls.CheckBox ('remember', group_box, caption = 'Remember me')
-
-        if form.is_submitted () and form.check ():
-            user.logon_by_password (e_login.value, e_password.value)
-            if e_remember.value:
-                user.set_cookies (_config ('cookie_age', 259200))
-
-        if user.is_guest ():
-            return {
-                'form': form,
-                'message': 'Invalid login or password' if form.is_submitted () else '',
-                '__template__': _config ('controller_logon_template', 'auth/logon.tpl')
-            }
-        raise cherrypy.HTTPRedirect (after_logon)
-
-    @cherrypy.expose
-    def logoff (self, **kwargs):
-        user = current_user ()
-        if user:
-            user.logoff ()
-        raise cherrypy.HTTPRedirect (_config ('after_logoff', '/'))
-
-    @cherrypy.expose
-    @cherrypy.tools.jinja ()
-    def denied (self, path = None):
-        return {
-            'path': path,
-            '__template__': _config ('controller_logon_template', 'auth/denied.tpl')
-        }
-
-
 class AuthTool (HandlerTool):
     '''
     Инструмент авторизации пользователей.
     '''
+
     def __init__ (self):
         super (AuthTool, self).__init__ (self.check, name = 'auth')
 

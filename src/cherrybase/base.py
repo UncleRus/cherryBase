@@ -68,6 +68,8 @@ class Application (object):
     def __init__ (self, name = None, config = None, vhosts = None, routes = None):
         self.name = name or uuid1 ()
         self.vhosts = vhosts or [self.name]
+        if isinstance (self.vhosts, basestring):
+            self.vhosts = [self.vhosts]
         self.tree = ApplicationTree (self)
         self.config = config
         self.app = _cptree.Application (None, '', self.config)

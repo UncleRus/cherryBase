@@ -7,14 +7,24 @@ from cherrypy._cpcompat import ntou
 from cherrypy._cpreqbody import RequestBody, SizedReader
 from cStringIO import StringIO
 
+
 class GpgError (Exception):
     pass
 
+
 class Encoder (object):
     '''
-    Обертка для GPG
+    Шифровальщик данных, является шорткат-оберткой вокруг python-gnupg.
     '''
+
     def __init__ (self, homedir, key_fingerprint, key_password):
+        '''
+        Инициализатор. Открывает каталог ключниц.
+        
+        :param homedir: Каталог ключниц GnuPG
+        :param key_fingerprint: Отпечаток приватного ключа, строка в шестнадцатеричном формате
+        :param key_password: Пароль приватного ключа.
+        '''
         self._key = key_fingerprint
         self._password = key_password
         self._gpg = gnupg.GPG (gnupghome = homedir)
@@ -26,8 +36,15 @@ class Encoder (object):
         raise GpgError ('\n'.join ([line for line in getattr (result, 'stderr', 'gpg: {}'.format (getattr (result, 'status', 'Unknown error'))).splitlines () if line.startswith ('gpg: ')]))
 
     def public_key_exists (self, key):
+        '''
+        Проверка наличия в ключнице публичного ключа.
+        
+        :param key: Отпечаток публичного ключа
+        :rtype: bool
+        :return: True, если ключ есть в ключнице
+        '''
         if len (key) < 8:
-            return False
+            raise GpgError ('Fingerprint is too short')
         key = key.upper ()
         for item in self._gpg.list_keys ():
             if item.get ('fingerprint', '').upper ().endswith (key):
@@ -35,6 +52,12 @@ class Encoder (object):
         return False
 
     def encode (self, data, recipient_key):
+        '''
+        Зашифровать и подписать данные для получателя.
+        
+        :param data: Данные для шифрованиия
+        :param recipient_key: Отпечаток публичного ключа получателя
+        '''
         result = self._gpg.encrypt (
             data,
             recipient_key,
@@ -46,6 +69,12 @@ class Encoder (object):
         return unicode (result)
 
     def decode (self, encoded, correspondent_key):
+        '''
+        Расшифровать и проверить подпись отправителя.
+        
+        :param encoded: Данные для расшифровки
+        :param correspondent_key: Отпечаток публичного ключа отправителя
+        '''
         result = self._gpg.decrypt_verify (
             encoded,
             correspondent_key,

@@ -5,19 +5,11 @@ import re
 import logging
 
 
-def to_type (type_, value, default):
+def to (type_, value, default):
     try:
         return type_ (value)
     except (ValueError, TypeError):
         return default
-
-
-def to_int (value, default = 0):
-    return to_type (int, value, default)
-
-
-def to_bool (value, default = False):
-    return value is not None and str (value).lower () in ('yes', 'true', '1')
 
 
 def escape (s):

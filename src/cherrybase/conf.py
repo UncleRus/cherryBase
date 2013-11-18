@@ -8,13 +8,15 @@ class ConfigNamespace (object):
     '''
     Класс-утилита для чтения конфигурации
     '''
+
+    __exit__ = None
+
     def __init__ (self, name, defaults = {}):
         '''
         Конструктор. Привязывает пространство имен к конфигурации CherryPy по умолчанию.
         
-        Args:
-            name (str): Название пространства имен
-            defaults (dict): Значения параметров конфигурации по умолчанию
+        :param name: Название пространства имен
+        :param defaults: Значения параметров конфигурации по умолчанию
         '''
         self.config = defaults
         cherrypy.config.namespaces [name] = self
@@ -23,7 +25,7 @@ class ConfigNamespace (object):
         self.config [key] = value
 
     def __getattr__ (self, name):
-        return self.config [name] if name in self.config else super (ConfigNamespace, self).__getattr__ (name)
+        return self.config [name]
 
     def __getitem__ (self, name):
         return self.config [name]
@@ -33,6 +35,9 @@ class DictConfigNamespace (dict):
     '''
     Класс-утилита для чтения конфигурационных словарей
     '''
+
+    __exit__ = None
+
     def __init__ (self, name, prefixes = (), defaults = {}, default_singles = {}):
         super (DictConfigNamespace, self).__init__({prefix: AttributeDict (defaults) for prefix in prefixes})
         self.defaults = defaults
@@ -50,4 +55,4 @@ class DictConfigNamespace (dict):
         self [section][key] = value
 
     def __getattr__ (self, name):
-        return self [name] if name in self else self.singles.get (name)
+        return self [name]
