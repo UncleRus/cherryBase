@@ -102,7 +102,7 @@ class PoolsCatalog (object):
                 self.pools [name].put (object)
             except:
                 cherrypy.log.error (
-                    'An error occured when freeing {}.{} object'.format (thread_index, name),
+                    'An error occured when freeing {}.{} object\n'.format (thread_index, name),
                     context = self.log_context,
                     severity = logging.WARNING,
                     traceback = True
@@ -129,14 +129,33 @@ class PoolsCatalog (object):
     def __repr__ (self):
         return '<PoolsCatalog({})>'.format (self.pools)
 
+    def remove (self, name, obj):
+        if name not in self.pools:
+            raise ValueError ('Unknown pool {}'.format (name))
+        objects = self.objects [getattr (cherrypy.thread_data, 'index', -1)]
+        if name in objects:
+            del objects [name]
+        self.pools [name].remove (obj)
+
     def get (self, name):
         if name not in self.pools:
             raise ValueError ('Unknown pool {}'.format (name))
         objects = self.objects [getattr (cherrypy.thread_data, 'index', -1)]
         if name not in objects:
             objects [name] = self.pools [name].get ()
+        else:
+            obj = objects [name]
+            # Выясняем, не протухло ли соединение
+            if hasattr (obj, 'is_connected') and not obj.is_connected ():
+                self.pools [name].remove (obj)
+                objects [name] = self.pools [name].get ()
         return objects [name]
 
     def put (self, name, obj):
+        if name not in self.pools:
+            raise ValueError ('Unknown pool {}'.format (name))
+        objects = self.objects [getattr (cherrypy.thread_data, 'index', -1)]
+        if name in objects:
+            del objects [name]
         self.pools [name].put (obj)
 

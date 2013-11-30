@@ -15,7 +15,6 @@ def use_orm (pool_name = 'default', autocommit = True, position = 1):
     def _wrap (method):
         @functools.wraps (method)
         def _wrapped (*args, **kwargs):
-            global catalog
             session = catalog.get (pool_name)
             _largs = list (args)
             _largs.insert (position, session)

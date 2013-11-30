@@ -1,51 +1,43 @@
 # -*- coding: utf-8 -*-
 
 import psycopg2.extras
-import psycopg2.pool
-from ..base import ShortcutsMixin
+from ..base import ThreadedPool, ShortcutsMixin
 
 
 class _Connection (psycopg2.extensions.connection, ShortcutsMixin):
 
-    _encoding = 'utf8'
-
     def __init__ (self, *args, **kwargs):
+        encoding = kwargs.get ('encoding', 'utf8')
+        if 'encoding' in kwargs:
+            del kwargs ['encoding']
         psycopg2.extensions.connection.__init__ (self, *args, **kwargs)
         psycopg2.extensions.register_type (psycopg2.extensions.UNICODE)
-        self.set_client_encoding (self._encoding)
-        self.cursor ().execute ('set bytea_output to escape')
+        self.set_client_encoding (encoding)
+        cursor = self.cursor ()
+        cursor.execute ('set bytea_output to escape')
+        cursor.close ()
         self.commit ()
 
     def cursor (self, name = None, cursor_factory = psycopg2.extras.DictCursor):
         return super (_Connection, self).cursor (*(name,) if name else (), cursor_factory = cursor_factory)
 
+    def is_connected (self):
+        try:
+            cursor = self.cursor ()
+            cursor.execute ('select 1')
+            self.rollback ()
+            return True
+        except:
+            return False
 
-class PgSql (object):
 
-    def __init__ (self, host = '127.0.0.1', port = 5432, dbname = 'postgres', user = 'postgres',
-                password = '', encoding = 'utf8', min_connections = 0, max_connections = 40):
+class PgSql (ThreadedPool):
 
-        self.min_connections = min_connections
-        self.max_connections = max_connections
-
-        class _EConnection (_Connection):
-            _encoding = encoding
-
-        self._pool = psycopg2.pool.ThreadedConnectionPool (
+    def __init__ (self, min_connections = 0, max_connections = 40, **kwargs):
+        super (PgSql, self).__init__ (
+            _Connection,
             min_connections,
             max_connections,
-            'host={host} port={port} dbname={dbname} user={user} password={password}'.format (
-                host = host,
-                port = port,
-                dbname = dbname,
-                user = user,
-                password = password
-            ),
-            connection_factory = _EConnection
+            dsn = 'host={host} port={port} dbname={dbname} user={user} password={password}'.format (**kwargs),
+            encoding = kwargs.get ('encoding', 'utf8')
         )
-
-    def get (self):
-        return self._pool.getconn ()
-
-    def put (self, connection):
-        self._pool.putconn (connection)

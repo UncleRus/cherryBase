@@ -2,6 +2,8 @@
 
 from cherrybase.utils import PoolsCatalog
 import functools
+import cherrypy
+import logging
 
 
 catalog = PoolsCatalog ('DB')
@@ -15,7 +17,6 @@ def use_db (pool_name = 'default', autocommit = True, position = 1):
     def _wrap (method):
         @functools.wraps (method)
         def _wrapped (*args, **kwargs):
-            global catalog
             connection = catalog.get (pool_name)
             _largs = list (args)
             _largs.insert (position, connection)
@@ -25,7 +26,16 @@ def use_db (pool_name = 'default', autocommit = True, position = 1):
                     connection.commit ()
                 return result
             except:
-                connection.rollback ()
+                try:
+                    connection.rollback ()
+                except:
+                    cherrypy.log.error (
+                        'Error in pool "{}" at rollback'.format (pool_name),
+                        context = 'DB',
+                        traceback = True,
+                        severity = logging.ERROR
+                    )
+                    catalog.remove (pool_name, connection)
                 raise
         return _wrapped
     return _wrap
@@ -39,24 +49,31 @@ class ShortcutsMixin (object):
         return cursor
 
     def select_row (self, sql, args = None):
-        return self.__execute (sql, args).fetchone ()
+        cursor = self.__execute (sql, args)
+        row = cursor.fetchone ()
+        cursor.close ()
+        return row
 
     def select_value (self, sql, args = None):
-        row = self.__execute (sql, args).fetchone ()
+        cursor = self.__execute (sql, args)
+        row = cursor.fetchone ()
+        cursor.close ()
         return row [0] if row else None
 
     def select_all (self, sql, args = None):
-        return self.__execute (sql, args).fetchall ()
+        cursor = self.__execute (sql, args)
+        result = cursor.fetchall ()
+        cursor.close ()
+        return result
 
 
 import threading
 
 
-class PoolError (Exception):
-    pass
-
-
 class ThreadedPool (object):
+
+    class Empty (Exception):
+        pass
 
     def __init__ (self, connector, min_connections, max_connections, **kwargs):
         self.min_connections = min_connections
@@ -84,13 +101,16 @@ class ThreadedPool (object):
 
     def _getconn (self):
         key = self._thread.get_ident ()
+        result = None
         if key in self._used:
-            return self._used [key]
-        if self._pool:
+            result = self._used [key]
+        elif self._pool:
             self._used [key] = self._pool.pop ()
-            return self._used [key]
+            result = self._used [key]
+        if result:
+            return result
         if len (self._used) == self.max_connections:
-            raise PoolError ('Connection pool exausted')
+            raise ThreadedPool.Empty ('Connection pool exausted')
         return self._connect (key)
 
     def _putconn (self, connection):
@@ -101,6 +121,15 @@ class ThreadedPool (object):
                 del self._used [key]
         else:
             connection.close ()
+
+    def _removeconn (self, connection):
+        key = self._thread.get_ident ()
+        if key in self._used:
+            del self._used [key]
+        try:
+            connection.close ()
+        except:
+            pass
 
     def get (self):
         self._lock.acquire ()
@@ -115,3 +144,11 @@ class ThreadedPool (object):
             return self._putconn (connection)
         finally:
             self._lock.release ()
+
+    def remove (self, connection):
+        self._lock.acquire ()
+        try:
+            return self._removeconn (connection)
+        finally:
+            self._lock.release ()
+
