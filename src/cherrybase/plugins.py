@@ -4,7 +4,8 @@ from cherrypy.process.plugins import SimplePlugin
 import threading
 import Queue
 import logging
-from threading import Timer
+from cherrypy.process.wspbus import states
+import time
 
 
 class TasksQueue (SimplePlugin):
@@ -122,7 +123,7 @@ class TaskManager (SimplePlugin):
             return
         self.bus.publish ('acquire_thread')
         task = self._tasks [code]
-        task [1] = Timer (interval, self._run_task, [code, interval] + list (args), kwargs)
+        task [1] = threading.Timer (interval, self._run_task, [code, interval] + list (args), kwargs)
         task [1].start ()
         task [0] (*args, **kwargs)
         self.bus.publish ('release_thread')
@@ -137,7 +138,7 @@ class TaskManager (SimplePlugin):
         :param args: Аргументы, с котрыми будет вызываться callable задачи
         :param kwargs: Имнованные аргументы, с котрыми будет вызываться callable задачи
         '''
-        timer = Timer (interval, self._run_task, [code, interval] + list (args), kwargs)
+        timer = threading.Timer (interval, self._run_task, [code, interval] + list (args), kwargs)
         self._tasks [code] = [task, timer]
         if self.started:
             timer.start ()
@@ -159,3 +160,52 @@ class TaskManager (SimplePlugin):
             if task [1]:
                 task [1].cancel ()
         self._tasks.clear ()
+
+
+class StarterStopper (SimplePlugin):
+    '''
+    Плагин, имеющий два списка callable: on_start и on_stop.
+    Функции из on_start выполняются в отдельном потоке сразу после запуска шины.
+    Функции из on_stop выполняются в основном потоке в процессе остановки шины.
+
+    Плагин подключается к шине автоматически и доступен под именем
+    ``cherrypy.engine.starter_stopper``
+    '''
+
+    def __init__ (self, bus):
+        super (StarterStopper, self).__init__ (bus)
+        self.thread = None
+        self.on_start = []
+        self.on_stop = []
+
+    def start (self):
+        if not self.thread:
+            self.thread = threading.Thread (target = self.run)
+            self.thread.start ()
+    start.priority = 75
+
+    def stop (self):
+        if self.thread:
+            self.thread.join ()
+            self.thread = None
+        for task in self.on_stop:
+            task ()
+        self.bus.log ('Stopper succesfully worked')
+
+    def run (self):
+        self.bus.publish ('acquire_thread')
+
+        while self.bus.state == states.STARTING:
+            time.sleep (0.1)
+
+        if self.bus.state == states.STARTED:
+            for task in self.on_start:
+                try:
+                    task ()
+                except Exception as e:
+                    self.bus.log ('An exception occured in on_start task {}: {}'.format (task, e))
+            self.bus.log ('Starter succesfully worked')
+        else:
+            self.bus.log ('Wrong bus state, starter tasks are ignored', logging.WARNING)
+
+        self.bus.publish ('release_thread')
