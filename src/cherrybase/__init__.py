@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 
-__version__ = '0.3.3'
+__version__ = '0.3.4'
 
 import cherrypy
 
-from . import base, rpc, bgtasks, utils, tools
+from . import base, rpc, plugins, utils, tools
 
-cherrypy.engine.bg_tasks_queue = bgtasks.TasksQueue (cherrypy.engine)
-cherrypy.engine.task_manager = bgtasks.TaskManager (cherrypy.engine)
+cherrypy.engine.bg_tasks_queue = plugins.TasksQueue (cherrypy.engine)
+cherrypy.engine.task_manager = plugins.TaskManager (cherrypy.engine)
+cherrypy.engine.starter_stopper = plugins.StarterStopper (cherrypy.engine)
 
 toolbox = cherrypy.tools
 
