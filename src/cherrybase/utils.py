@@ -81,6 +81,15 @@ class Log (object):
 
 
 class PoolsCatalog (object):
+    '''
+    Каталог именованных пулов соединенй с БД, сессий ORM и т.п.
+    Привязывает полученные из пулов соединения к потокам поэтому позволяет использовать
+    не потокобезопасные соединения в cherrypy.
+    Обеспечивает dict-подобный интерфейс доступа к пулам.
+    По умолчанию существуют два каталога: ``cherrybase.db.catalog`` и ``cherrybase.orm.catalog``.
+    '''
+
+    MAX_DEPTH = 50
 
     def __init__ (self, log_context):
         self.pools = {}
@@ -130,28 +139,64 @@ class PoolsCatalog (object):
         return '<PoolsCatalog({})>'.format (self.pools)
 
     def remove (self, name, obj):
+        '''
+        Удалить объект из кеша и пула. Используется для уничтожения
+        подвисших и разорванных соединений.
+        
+        :param name: Название пула
+        :param obj: Объект из этого пула, ранее полученный методом get()
+        '''
         if name not in self.pools:
-            raise ValueError ('Unknown pool {}'.format (name))
+            raise KeyError ('Unknown pool {}'.format (name))
         objects = self.objects [getattr (cherrypy.thread_data, 'index', -1)]
         if name in objects:
             del objects [name]
         self.pools [name].remove (obj)
 
+    def _is_alive (self, obj):
+        return not hasattr (obj, 'is_connected') or not callable (obj.is_connected) or obj.is_connected ()
+
+    def _get (self, name, depth = 0):
+        if depth >= self.MAX_DEPTH:
+            raise RuntimeError ('Maximum depth reached in pool "{}"'.format (name))
+        result = self.pools [name].get ()
+        if self._is_alive (result):
+            return result
+        cherrypy.log.error ('Connection from pool "{}" is dead, dropping'.format (name), self.log_context, logging.WARNING)
+        self.pools [name].remove (result)
+        return self._get (name, depth + 1)
+
     def get (self, name):
+        '''
+        Получить объект из кеша для текущего потока или пула.
+        Если объект отсутствует в кеше текущего потока, то вызывается
+        метод ``get()`` соответствующего пула.
+        Полученный из пула или кеша объект проверяется на работоспособность
+        вызовом его метода ``is_connected()``, если таковой существует.
+        Если полученный объект неработоспособен, он удаляется из пула и кеша,
+        после чего процесс получения запускается заново.
+        Если число попыток получения объекта становится равным ``PoolsCatalog.MAX_DEPTH``,
+        выбрасывается исключение RuntimeError
+        
+        :param name: Название пула
+        :returns: ОБъект из пула.
+        '''
         if name not in self.pools:
-            raise ValueError ('Unknown pool {}'.format (name))
+            raise KeyError ('Unknown pool {}'.format (name))
         objects = self.objects [getattr (cherrypy.thread_data, 'index', -1)]
-        if name not in objects:
-            objects [name] = self.pools [name].get ()
-        else:
-            obj = objects [name]
-            # Выясняем, не протухло ли соединение
-            if hasattr (obj, 'is_connected') and not obj.is_connected ():
-                self.pools [name].remove (obj)
-                objects [name] = self.pools [name].get ()
+        if name in objects and self._is_alive (objects [name]):
+            return objects [name]
+        objects [name] = self._get (name)
         return objects [name]
 
     def put (self, name, obj):
+        '''
+        Удаление объекат из кеша и возврат его в пул.
+        Метод не следует вызывать вручную, он вызывается автоматически при остановке потока.
+        
+        :param name: Название пула
+        :param obj: Объект из этого пула, ранее полученный методом get()
+        '''
         if name not in self.pools:
             raise ValueError ('Unknown pool {}'.format (name))
         objects = self.objects [getattr (cherrypy.thread_data, 'index', -1)]

@@ -5,7 +5,6 @@ import threading
 import Queue
 import logging
 from cherrypy.process.wspbus import states
-import time
 
 
 class TasksQueue (SimplePlugin):
@@ -195,8 +194,7 @@ class StarterStopper (SimplePlugin):
     def run (self):
         self.bus.publish ('acquire_thread')
 
-        while self.bus.state == states.STARTING:
-            time.sleep (0.1)
+        self.bus.wait (states.STARTED)
 
         if self.bus.state == states.STARTED:
             for task in self.on_start:
