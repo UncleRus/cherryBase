@@ -17,6 +17,15 @@ class _Connection (Connection, ShortcutsMixin):
 
 class MySql (ThreadedPool):
 
+    defaults = {
+        'host': '127.0.0.1',
+        'port': 3306,
+        'unix_socket': None,
+        'database': None,
+        'user': '',
+        'password': ''
+    }
+
     def __init__ (self, min_connections = 0, max_connections = 40, **kwargs):
         super (MySql, self).__init__ (_Connection, min_connections, max_connections, **kwargs)
 

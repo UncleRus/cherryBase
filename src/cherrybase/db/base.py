@@ -41,6 +41,43 @@ def use_db (pool_name = 'default', autocommit = True, position = 1):
     return _wrap
 
 
+def auto_config (config, pool_name, prefix = '', section = None):
+    '''
+    Разбор секции конфигурации и создание соответствюущего пула
+    подключения к БД.
+    Конфигурация (или указанная секция) должна содержать параметр ``prefix + 'driver'``.
+    По умолчанию, драйвер = sqlite.
+    Секция может содержать любые параметры, являющиеся ключами атрибута ``defaults`` драйвера.
+    
+    :param config: dict-like конфигурация
+    :param pool_name: Имя создаваемого пула
+    :param prefix: Строка префикса, котора будет добавлена ко всем параметрам конфигурации
+    :param section: Название раздела конфигурации, если None, то раздел не выбирается
+    '''
+    if section:
+        config = config.get (section, {})
+
+    driver_name = config.get (prefix + 'driver', 'sqlite')
+    # FIXME : Переписать загрузку драйвера с использованием __import__ или importlib
+    if driver_name == 'sqlite':
+        from drivers.sqlite import Sqlite
+        Driver = Sqlite
+    elif driver_name == 'pgsql':
+        from drivers.pgsql import PgSql
+        Driver = PgSql
+    elif driver_name == 'mysql':
+        from drivers.mysql import MySql
+        Driver = MySql
+
+    defaults = Driver.defaults.copy ()
+    defaults.update ({
+        'min_connections': 5,
+        'max_connections': 30
+    })
+    # FIXME :  Опираться не на defaults драйвера, а на параметры конфига
+    catalog [pool_name] = Driver (**{param: config.get (prefix + param, value) for param, value in defaults.iteritems ()})
+
+
 class ShortcutsMixin (object):
 
     def __execute (self, sql, args):

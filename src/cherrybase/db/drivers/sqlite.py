@@ -10,5 +10,7 @@ class _Connection (sqlite3.Connection, ShortcutsMixin):
 
 class Sqlite (ThreadedPool):
 
+    defaults = {'database': ':memory:'}
+
     def __init__ (self, min_connections = 0, max_connections = 40, *args, **kwargs):
         super (Sqlite, self).__init__ (_Connection, min_connections, max_connections, check_same_thread = False, **kwargs)

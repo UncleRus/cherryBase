@@ -67,12 +67,12 @@ class BaseUser (object):
 
     def create_hash (self, login, password):
         '''
-        Создание хеша пароля для пользователя. Должен быть перекрыт в наследнике.
+        Создание хеша пароля для пользователя. Может быть перекрыт в наследнике.
         
         :param login: Логин пользователя
         :param password: Пароль пользователя
         '''
-        return hashlib.sha1 (password).hexdigest ()
+        return hashlib.sha256 (password).hexdigest ()
 
     def _find_user (self, login, hash):
         '''

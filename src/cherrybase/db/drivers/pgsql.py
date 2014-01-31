@@ -33,6 +33,14 @@ class _Connection (psycopg2.extensions.connection, ShortcutsMixin):
 
 class PgSql (ThreadedPool):
 
+    defaults = {
+        'host': '127.0.0.1',
+        'port': '5432',
+        'dbname': 'postgres',
+        'user': 'postgres',
+        'password': 'secret'
+    }
+
     def __init__ (self, min_connections = 0, max_connections = 40, **kwargs):
         super (PgSql, self).__init__ (
             _Connection,

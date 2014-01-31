@@ -183,8 +183,8 @@ class Server (object):
         if not _daemon_conf.on:
             return
 
-        from cherrypy.process.plugins import PIDFile, Daemonizer, DropPrivileges
-        if os.name == 'posix':
+        if os.name == 'posix' and os.getuid () == 0:
+            from cherrypy.process.plugins import DropPrivileges
             import grp, pwd
             try:
                 uid = pwd.getpwnam (_daemon_conf.user)[2]
@@ -196,11 +196,9 @@ class Server (object):
                     logging.FATAL
                 )
                 raise
-        else:
-            uid = None
-            gid = None
+            cherrypy.drop_privileges = DropPrivileges (cherrypy.engine, uid = uid, gid = gid).subscribe ()
 
-        cherrypy.drop_privileges = DropPrivileges (cherrypy.engine, uid = uid, gid = gid).subscribe ()
+        from cherrypy.process.plugins import PIDFile, Daemonizer
         if _daemon_conf.pid_file:
             PIDFile (cherrypy.engine, _daemon_conf.pid_file).subscribe ()
         Daemonizer (cherrypy.engine).subscribe ()

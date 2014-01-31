@@ -194,7 +194,7 @@ class StarterStopper (SimplePlugin):
     def run (self):
         self.bus.publish ('acquire_thread')
 
-        self.bus.wait (states.STARTED)
+        self.bus.wait ((states.STARTED, states.STOPPING, states.EXITING))
 
         if self.bus.state == states.STARTED:
             for task in self.on_start:
