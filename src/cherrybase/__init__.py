@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-__version__ = '0.3.6'
+__version__ = '0.3.9'
 
 import cherrypy
 
@@ -11,10 +11,6 @@ cherrypy.engine.task_manager = plugins.TaskManager (cherrypy.engine)
 cherrypy.engine.starter_stopper = plugins.StarterStopper (cherrypy.engine)
 
 toolbox = cherrypy.tools
-
-from tools.gpg import GpgIn, GpgOut
-toolbox.gpg_in = GpgIn ()
-toolbox.gpg_out = GpgOut ()
 
 from tools.jinja import JinjaTool
 toolbox.jinja = JinjaTool ()

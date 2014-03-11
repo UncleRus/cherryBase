@@ -92,9 +92,7 @@ class ShortcutsMixin (object):
         return row
 
     def select_value (self, sql, args = None):
-        cursor = self.__execute (sql, args)
-        row = cursor.fetchone ()
-        cursor.close ()
+        row = self.select_row (sql, args)    
         return row [0] if row else None
 
     def select_all (self, sql, args = None):

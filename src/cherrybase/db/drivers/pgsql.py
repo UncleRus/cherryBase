@@ -13,9 +13,11 @@ class _Connection (psycopg2.extensions.connection, ShortcutsMixin):
         psycopg2.extensions.connection.__init__ (self, *args, **kwargs)
         psycopg2.extensions.register_type (psycopg2.extensions.UNICODE)
         self.set_client_encoding (encoding)
-        cursor = self.cursor ()
-        cursor.execute ('set bytea_output to escape')
-        cursor.close ()
+        # параметр "bytea_output" устанавливаем с 9-ой версии:
+        if self.server_version >= 90000:
+            cursor = self.cursor ()
+            cursor.execute ('set bytea_output to escape')
+            cursor.close ()
         self.commit ()
 
     def cursor (self, name = None, cursor_factory = psycopg2.extras.DictCursor):
