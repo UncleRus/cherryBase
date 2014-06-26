@@ -40,6 +40,36 @@ def use_db (pool_name = 'default', autocommit = True, position = 1):
         return _wrapped
     return _wrap
 
+def use_mongo (pool_name = 'default', position = 1):
+    '''
+    Декоратор, добавляет в параметры функции ссылку на объект подключения к NoSQL БД.
+    Ссылка добавляется на позицию position в списке параметров, 0 - первый параметр.
+    '''
+    def _wrap (method):
+        @functools.wraps (method)
+        def _wrapped (*args, **kwargs):
+            connection = catalog.get (pool_name)
+            # подключение к БД, указанной в URI соединения:
+            db_conn = connection.get_default_database ()
+            _largs = list (args)
+            _largs.insert (position, db_conn)
+            # FIXME: в MongoDB отсутствует поддержка механизма транзакций
+            # они отдаются на откуп программисту
+            try:
+                result = method (*_largs, **kwargs)
+                return result
+            except:
+                cherrypy.log.error (
+                    'Error in pool "{}" at rollback'.format (pool_name),
+                    context = 'DB',
+                    traceback = True,
+                    severity = logging.ERROR
+                )
+                catalog.remove (pool_name, connection)
+                raise
+        return _wrapped
+    return _wrap
+
 
 def auto_config (config, pool_name, prefix = '', section = None):
     '''
@@ -68,6 +98,9 @@ def auto_config (config, pool_name, prefix = '', section = None):
     elif driver_name == 'mysql':
         from drivers.mysql import MySql
         Driver = MySql
+    elif driver_name == 'mongodb':
+        from drivers.mongodb import MongoDb
+        Driver = MongoDb
 
     defaults = Driver.defaults.copy ()
     defaults.update ({

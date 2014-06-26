@@ -200,8 +200,8 @@ class StarterStopper (SimplePlugin):
             for task in self.on_start:
                 try:
                     task ()
-                except Exception as e:
-                    self.bus.log ('An exception occured in on_start task {}: {}'.format (task, e))
+                except:
+                    self.bus.log ('An exception occured in on_start task {}'.format (task), logging.ERROR, traceback = True)
             self.bus.log ('Starter succesfully worked')
         else:
             self.bus.log ('Wrong bus state, starter tasks are ignored', logging.WARNING)

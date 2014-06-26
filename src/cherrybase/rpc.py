@@ -41,7 +41,7 @@ class Introspection (object):
         if _obj == self._controller:
             self.methods = {}
         for member in inspect.getmembers (_obj):
-            if member [0].startswith ('_') or inspect.isclass (member [1]) or member [1] == prev or member [1] is None:
+            if member [0].startswith ('_') or inspect.isclass (member [1]) or member [1] == prev or member [1] is None or isinstance (member [1], Controller):
                 continue
             _path = '.'.join ((path, member [0])) if path else member [0]
             if callable (member [1]) and getattr (member [1], '__rpc_exposed', False):
