@@ -27,6 +27,7 @@ class _Connection (psycopg2.extensions.connection, ShortcutsMixin):
         try:
             cursor = self.cursor ()
             cursor.execute ('select 1')
+            cursor.close ()
             self.rollback ()
             return True
         except:

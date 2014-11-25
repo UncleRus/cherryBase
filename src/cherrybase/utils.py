@@ -83,7 +83,7 @@ class Log (object):
 class PoolsCatalog (object):
     '''
     Каталог именованных пулов соединенй с БД, сессий ORM и т.п.
-    Привязывает полученные из пулов соединения к потокам поэтому позволяет использовать
+    Привязывает полученные из пулов соединения к потокам и поэтому позволяет использовать
     не потокобезопасные соединения в cherrypy.
     Обеспечивает dict-подобный интерфейс доступа к пулам.
     По умолчанию существуют два каталога: ``cherrybase.db.catalog`` и ``cherrybase.orm.catalog``.
@@ -111,7 +111,7 @@ class PoolsCatalog (object):
                 self.pools [name].put (object)
             except:
                 cherrypy.log.error (
-                    'An error occured when freeing {}.{} object\n'.format (thread_index, name),
+                    'An error occured while freeing {}.{} object\n'.format (thread_index, name),
                     context = self.log_context,
                     severity = logging.WARNING,
                     traceback = True
@@ -179,7 +179,7 @@ class PoolsCatalog (object):
         выбрасывается исключение RuntimeError
         
         :param name: Название пула
-        :returns: ОБъект из пула.
+        :returns: Объект из пула.
         '''
         if name not in self.pools:
             raise KeyError ('Unknown pool {}'.format (name))
@@ -191,7 +191,7 @@ class PoolsCatalog (object):
 
     def put (self, name, obj):
         '''
-        Удаление объекат из кеша и возврат его в пул.
+        Удаление объекта из кеша и возврат его в пул.
         Метод не следует вызывать вручную, он вызывается автоматически при остановке потока.
         
         :param name: Название пула

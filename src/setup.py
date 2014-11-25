@@ -1,17 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+from setuptools import setup
 
-import cherrybase
+__version__ = '0.4.2'
 
 def main ():
     setup (
         name = 'cherrybase',
-        version = cherrybase.__version__,
+        version = __version__,
         description = 'Wrapper around CherryPy',
         long_description = 'Wrapper around CherryPy',
         classifiers = [
@@ -38,7 +35,7 @@ def main ():
         author = 'Ruslan V. Uss',
         author_email = 'unclerus@gmail.com',
         url = 'https://github.com/UncleRus/cherryBase',
-        license = 'BSD',
+        license = 'LGPLv3',
         scripts = ['scripts/cherrybased'],
         packages = [
             'cherrybase',
@@ -52,7 +49,7 @@ def main ():
         #data_files = [
         #    ('bin', ['bin/cherrybased'])
         #],
-        install_requires = ['CherryPy >= 3.2', 'python-gnupg >= 0.3.6']
+        install_requires = ['cherrypy >= 3.2']
     )
 
 
