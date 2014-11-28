@@ -60,7 +60,7 @@ class ApplicationTree (object):
             self.root = handler
         else:
             setattr (self.find_owner (path_list [0:-1]), path_list [-1], handler)
-        cherrypy.log.error ('{} mounted on "{}" in "{}"'.format (type (handler).__name__, path, self.owner.name), 'TREE')
+        cherrypy.log.error ('{} is mounted on "{}" in "{}"'.format (type (handler).__name__, path, self.owner.name), 'TREE')
 
 
 class Application (object):

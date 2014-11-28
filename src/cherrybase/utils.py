@@ -135,6 +135,18 @@ class PoolsCatalog (object):
     def __getitem__ (self, name):
         return self.pools [name]
 
+    def __delitem__ (self, name):
+        if name not in self.pools:
+            raise KeyError ('Unknown pool {}'.format (name))
+
+        for objects in self.objects.values ():
+            if name in objects:
+                self.pools [name].remove (objects [name])
+                del objects [name]
+
+        del self.pools [name]
+        cherrypy.log.error ('Pool "{}" deleted'.format (name), self.log_context, logging.INFO)
+
     def __repr__ (self):
         return '<PoolsCatalog({})>'.format (self.pools)
 
