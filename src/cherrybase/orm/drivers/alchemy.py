@@ -48,6 +48,9 @@ class SqlAlchemy (object):
     def put (self, session):
         pass
 
+    def clean (self):
+        pass
+
 
 _engines = {
     'PgSql': 'postgresql://',
@@ -73,7 +76,7 @@ def wrap (db_pool_name):
         pool_max_overflow = db_pool.max_connections,
     )
 
-
+# FIXME: Переделать!
 logger = logging.getLogger ('sqlalchemy.engine')
 if config.log_filename:
     logger.addHandler (TimedRotatingFileHandler (config.log_filename, 'midnight'))

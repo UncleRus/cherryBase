@@ -3,6 +3,7 @@
 import cherrypy
 from cherrypy._cptools import Tool
 import jinja2
+import sys
 
 
 class JinjaHandler (cherrypy.dispatch.LateParamPageHandler):
@@ -29,6 +30,18 @@ class JinjaHandler (cherrypy.dispatch.LateParamPageHandler):
         return self.env.get_template (response ['__template__']).render (response)
 
 
+if sys.version_info [0] >= 3:
+    def _finalize (x):
+        return '' if x is None else x
+else:
+    def _finalize (x):
+        if x is None:
+            return ''
+        if type (x) == str:
+            return unicode (x, 'utf-8')
+        return x
+
+
 class JinjaTool (Tool):
     '''
     Инструмент шаблонизации. Доступен под именем `cherrypy.tools.jinja`.
@@ -40,12 +53,12 @@ class JinjaTool (Tool):
         - индекс результата контроллера `'__template__'`
         - атрибут `cherrypy.response.__template__`
         - параметр `'tools.jinja.template'` (параметр template декоратора)
-        - если ни один из предыдущих способов не определил имя шаблон, оно 
+        - если ни один из предыдущих способов не определил имя шаблона, оно 
             по умолчанию равно `'{url}.tpl'`, например при URL '/some/web/page/'
             имя шаблона будет равно 'some/web/page.tpl'
     
      В шаблон его имя (прочитанное или установленное по умолчанию)
-        передается под именем `__template__`
+        передается в переменной `__template__`
     
     Параметры инструмента:
         
@@ -64,15 +77,23 @@ class JinjaTool (Tool):
         )
         self.env = jinja2.Environment (
             extensions = ['jinja2.ext.i18n'],
-            finalize = lambda x: '' if x is None else x
+            finalize = _finalize
         )
+        self.default_loader = jinja2.FileSystemLoader ('')
 
-    def run (self, template = None, loader = None, newline_sequence = '\n'):
+    def run (self, template = None, loader = None, newline_sequence = '\n', gettext_translations = None):
         request = cherrypy.serving.request
         if not template:
             path = unicode (request.path_info).strip ('/')
             template = '{0}.tpl'.format (path) if path else 'index.tpl'
-        self.env.loader = loader or jinja2.FileSystemLoader ('')
+
+        self.env.loader = loader or self.default_loader
         self.env.newline_sequence = newline_sequence
+        self.env.uninstall_gettext_translations (None)
+        if gettext_translations:
+            self.env.install_gettext_translations (gettext_translations, True)
+        else:
+            self.env.install_null_translations (True)
+
         request.jinja_env = self.env
         request.handler = JinjaHandler (cherrypy.request.handler, self.env, template)

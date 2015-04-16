@@ -7,7 +7,44 @@ import logging
 from cherrypy.process.wspbus import states
 
 
-class TasksQueue (SimplePlugin):
+class ExitThread (Exception):
+    pass
+
+
+class IterativePlugin (SimplePlugin):
+
+    def __init__ (self, bus, name = None):
+        super (IterativePlugin, self).__init__ (bus)
+        self.name = name or type (self).__name__
+        self.running = False
+        self.thread = None
+
+    def start (self):
+        self.running = True
+        if not self.thread:
+            self.thread = threading.Thread (target = self.run)
+            self.thread.start ()
+        self.bus.log ('Started %s' % self.name)
+
+    def stop (self):
+        self.bus.log ('Stopping %s...' % self.name)
+        self.running = False
+        if self.thread:
+            self.thread.join ()
+            self.thread = None
+        self.bus.log ('Stopped %s' % self.name)
+
+    def run (self):
+        self.bus.publish ('acquire_thread')
+        while self.running:
+            try:
+                self.iterate ()
+            except ExitThread:
+                break
+        self.bus.publish ('release_thread')
+
+
+class TasksQueue (IterativePlugin):
     '''
     Фоновая очередь задач (callables), работающих последовательно.
     Используется для постановки длительных задач в фон из обработчиков.
@@ -47,40 +84,21 @@ class TasksQueue (SimplePlugin):
     def __init__ (self, bus, queue_size = 100, timeout = 2):
         super (TasksQueue, self).__init__ (bus)
         self.queue = Queue.Queue (queue_size)
-        self.running = False
         self.timeout = timeout
-        self.thread = None
 
     def start (self):
-        self.running = True
-        if not self.thread:
-            self.thread = threading.Thread (target = self.run)
-            self.thread.start ()
-        self.bus.log ('Started TasksQueue')
+        super (TasksQueue, self).start ()
     start.priority = 76
 
-    def stop (self):
-        self.bus.log ('Stopping TasksQueue...')
-        self.running = 'stopping'
-        if self.thread:
-            self.thread.join ()
-            self.thread = None
-        self.running = False
-        self.bus.log ('Stopped TasksQueue')
-
-    def run (self):
-        self.bus.publish ('acquire_thread')
-        while self.running:
-            try:
-                func, args, kwargs = self.queue.get (block = True, timeout = self.timeout)
-                func (*args, **kwargs)
-            except Queue.Empty:
-                if self.running == 'stopping':
-                    self.bus.publish ('release_thread')
-                    return
-                continue
-            except:
-                self.bus.log ('Error in task {}'.format (func), level = logging.ERROR, traceback = True)
+    def iterate (self):
+        try:
+            func, args, kwargs = self.queue.get (block = True, timeout = self.timeout)
+            func (*args, **kwargs)
+        except Queue.Empty:
+            if self.running == 'stopping':
+                raise ExitThread ()
+        except:
+            self.bus.log ('Error in task {}'.format (func), level = logging.ERROR, traceback = True)
 
     def put (self, task, *args, **kwargs):
         self.queue.put ((task, args, kwargs))
@@ -100,7 +118,7 @@ class TaskManager (SimplePlugin):
     '''
 
     def __init__ (self, bus):
-        SimplePlugin.__init__ (self, bus)
+        super (TaskManager, self).__init__ (bus)
         self._tasks = {}
         self.started = False
 

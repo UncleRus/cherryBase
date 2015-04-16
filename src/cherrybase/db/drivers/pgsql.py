@@ -28,7 +28,6 @@ class _Connection (psycopg2.extensions.connection, ShortcutsMixin):
             cursor = self.cursor ()
             cursor.execute ('select 1')
             cursor.close ()
-            self.rollback ()
             return True
         except:
             return False
@@ -44,11 +43,12 @@ class PgSql (ThreadedPool):
         'password': 'secret'
     }
 
-    def __init__ (self, min_connections = 0, max_connections = 40, **kwargs):
+    def __init__ (self, min_connections = 0, max_connections = 40, timeout = 0, **kwargs):
         super (PgSql, self).__init__ (
             _Connection,
             min_connections,
             max_connections,
+            timeout,
             dsn = 'host={host} port={port} dbname={dbname} user={user} password={password}'.format (**kwargs),
             encoding = kwargs.get ('encoding', 'utf8')
         )

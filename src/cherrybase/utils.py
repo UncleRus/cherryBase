@@ -3,6 +3,8 @@
 import cherrypy
 import re
 import logging
+from cherrybase.plugins import IterativePlugin
+import time
 
 
 def to (type_, value, default):
@@ -45,8 +47,9 @@ class AttributeDict (dict):
 
 
 def _create_handler (filename, debug = True):
-    import logging.handlers
-    result = logging.handlers.TimedRotatingFileHandler (filename, 'midnight')
+#    import logging.handlers
+#    result = logging.handlers.TimedRotatingFileHandler (filename, 'midnight')
+    result = logging.FileHandler (filename)
     if debug:
         result.setLevel (logging.DEBUG)
     result.setFormatter (cherrypy._cplogging.logfmt)
@@ -80,6 +83,22 @@ class Log (object):
         self._logger.log (severity, ' '.join ((cherrypy.log.time (), context, msg)))
 
 
+class PoolCleaner (IterativePlugin):
+
+    def __init__ (self, bus, catalog, interval = 0.1):
+        super (PoolCleaner, self).__init__ (bus, '%s PoolCleaner' % catalog.log_context)
+        self.interval = interval
+        self.catalog = catalog
+
+    def start (self):
+        super (PoolCleaner, self).start ()
+    start.priority = 40
+
+    def iterate (self):
+        self.catalog.clean ()
+        time.sleep (self.interval)
+
+
 class PoolsCatalog (object):
     '''
     Каталог именованных пулов соединенй с БД, сессий ORM и т.п.
@@ -95,6 +114,10 @@ class PoolsCatalog (object):
         self.pools = {}
         self.objects = {}
         self.log_context = log_context
+
+        self.cleaner = PoolCleaner (cherrypy.engine, self)
+        self.cleaner.subscribe ()
+
         cherrypy.engine.subscribe ('start_thread', self._start_thread)
         cherrypy.engine.subscribe ('stop_thread', self._stop_thread)
         self._start_thread (-1)
@@ -141,7 +164,7 @@ class PoolsCatalog (object):
 
         for objects in self.objects.values ():
             if name in objects:
-                self.pools [name].remove (objects [name])
+                self.pools [name].put (objects [name])
                 del objects [name]
 
         del self.pools [name]
@@ -149,6 +172,9 @@ class PoolsCatalog (object):
 
     def __repr__ (self):
         return '<PoolsCatalog({})>'.format (self.pools)
+
+    def _objects (self):
+        return self.objects.get (getattr (cherrypy.thread_data, 'index', -1), {})
 
     def remove (self, name, obj):
         '''
@@ -160,7 +186,7 @@ class PoolsCatalog (object):
         '''
         if name not in self.pools:
             raise KeyError ('Unknown pool {}'.format (name))
-        objects = self.objects [getattr (cherrypy.thread_data, 'index', -1)]
+        objects = self._objects ()
         if name in objects:
             del objects [name]
         self.pools [name].remove (obj)
@@ -195,7 +221,7 @@ class PoolsCatalog (object):
         '''
         if name not in self.pools:
             raise KeyError ('Unknown pool {}'.format (name))
-        objects = self.objects [getattr (cherrypy.thread_data, 'index', -1)]
+        objects = self._objects ()
         if name in objects and self._is_alive (objects [name]):
             return objects [name]
         objects [name] = self._get (name)
@@ -211,8 +237,30 @@ class PoolsCatalog (object):
         '''
         if name not in self.pools:
             raise ValueError ('Unknown pool {}'.format (name))
-        objects = self.objects [getattr (cherrypy.thread_data, 'index', -1)]
+        objects = self._objects ()
         if name in objects:
             del objects [name]
         self.pools [name].put (obj)
+
+    def clean (self):
+        for name, pool in self.pools.items ():
+            pool.clean ()
+            # Синхронизируем objects с пулом
+            for objects in self.objects.values ():
+                if name in objects and objects [name] not in pool:
+                    del objects [name]
+
+    def idle (self, name, obj):
+        '''
+        Маркировка объекта как простаивающего.
+        Если в настройках соответствующего пула указан ненулевой таймаут,
+        то такое соединение будет закрыто и изъято из пула по достижению указанного таймаута
+        
+        :param name: Название пула
+        :param obj: Объект из этого пула, ранее полученный методом get()
+        '''
+        if name not in self.pools:
+            raise ValueError ('Unknown pool {}'.format (name))
+        self.pools [name].idle (obj)
+
 

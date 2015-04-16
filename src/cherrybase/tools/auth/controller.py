@@ -5,6 +5,7 @@ import cherrypy
 from . import current_user
 from .base import _config
 
+
 class AuthController (object):
 
     class Form (wtf.Form):
@@ -19,7 +20,7 @@ class AuthController (object):
         user = current_user ()
         if not user:
             raise cherrypy.HTTPError (500, 'Current user is not defined. Maybe cherrypy.tools.auth_tool is not enabled')
-        after_logon = _config ('after_logon', '/')
+        after_logon = kwargs.get ('after', _config ('after_logon', '/'))
         if not user.is_guest ():
             raise cherrypy.HTTPRedirect (after_logon)
 
@@ -46,7 +47,7 @@ class AuthController (object):
         if user:
             user.logoff ()
             user.set_cookies (0)
-        raise cherrypy.HTTPRedirect (_config ('after_logoff', '/'))
+        raise cherrypy.HTTPRedirect (kwargs.get ('after', _config ('after_logoff', '/')))
 
     @cherrypy.expose
     @cherrypy.tools.jinja ()

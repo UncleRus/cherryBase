@@ -37,6 +37,6 @@ class MySql (ThreadedPool):
         'compress': False
     }
 
-    def __init__ (self, min_connections = 0, max_connections = 40, **kwargs):
-        super (MySql, self).__init__ (_Connection, min_connections, max_connections, **kwargs)
+    def __init__ (self, min_connections = 0, max_connections = 40, timeout = 0, **kwargs):
+        super (MySql, self).__init__ (_Connection, min_connections, max_connections, timeout, **kwargs)
 

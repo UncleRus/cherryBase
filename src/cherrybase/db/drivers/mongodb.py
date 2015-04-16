@@ -25,11 +25,12 @@ class MongoDb (ThreadedPool):
         'password': 'secret',
     }
 
-    def __init__ (self, min_connections = 1, max_connections = 40, **kwargs):
+    def __init__ (self, min_connections = 1, max_connections = 40, timeout = 0, **kwargs):
         super (MongoDb, self).__init__ (
             _Connection,
             min_connections,
             max_connections,
+            timeout,
             host = 'mongodb://{user}:{password}@{host}:{port}/{dbname}'.format (**kwargs),
         )
 

@@ -122,8 +122,8 @@ class BaseUser (object):
 
         profile = self._find_user (login, hash)
         if profile and isinstance (profile, dict):
-            self.login = unicode (login)
-            self.hash = unicode (hash)
+            self.login = login
+            self.hash = hash
             self.profile = profile
             self._load_rights ()
         self._store ()
@@ -189,7 +189,7 @@ class AuthTool (HandlerTool):
         if path.startswith (mount_point) or request._auth_user.check_rights (path):
             return False
 
-        if cherrypy.request.user.is_guest ():
+        if request._auth_user.is_guest ():
             raise cherrypy.HTTPRedirect (mount_point + '/logon')
 
         raise cherrypy.InternalRedirect (mount_point + '/denied', urlencode ({'path': path}))
