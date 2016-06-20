@@ -108,7 +108,8 @@ def auto_config (config, pool_name, prefix = '', section = None):
     defaults = Driver.defaults.copy ()
     defaults.update ({
         'min_connections': 5,
-        'max_connections': 30
+        'max_connections': 30,
+        'timeout': 0
     })
     catalog [pool_name] = Driver (**{param: config.get (prefix + param, value) for param, value in defaults.iteritems ()})
 

@@ -2,6 +2,8 @@
 
 from cherrybase.utils import PoolsCatalog
 import functools
+import cherrypy
+import logging
 
 
 catalog = PoolsCatalog ('ORM')
@@ -21,17 +23,21 @@ def use_orm (pool_name = 'default', autocommit = True, position = 1):
             try:
                 result = method (*_largs, **kwargs)
                 if autocommit:
-                    try:
-                        session.flush ()
-                        session.commit ()
-                    except:
-                        session.rollback ()
-                        session.expunge_all ()
-                        raise
+                    session.flush ()
+                    session.commit ()
                 return result
             except:
-                session.rollback ()
-                session.expunge_all ()
+                try:
+                    session.rollback ()
+                    session.expunge_all ()
+                except:
+                    cherrypy.log.error (
+                        'Error in pool "{}" at rollback'.format (pool_name),
+                        context = 'ORM',
+                        traceback = True,
+                        severity = logging.ERROR
+                    )
+                    raise
                 raise
         return _wrapped
     return _wrap
