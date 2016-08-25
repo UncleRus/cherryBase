@@ -224,6 +224,11 @@ class ThreadedPool (object):
         except:
             pass
 
+        for thread_index in list(self.used.keys()):
+            if self.used [thread_index] == connection:
+                del self.used [thread_index]
+        if connection in self.pool:
+            self.pool.remove (connection)
         if connection in self.timeouts:
             del self.timeouts [connection]
 
