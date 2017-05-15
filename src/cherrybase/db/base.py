@@ -207,10 +207,10 @@ class ThreadedPool (object):
 
     def _putconn (self, connection):
         key = self._thread.get_ident ()
+        if key in self.used:
+            del self.used [key]
         if len (self.pool) < self.min_connections:
             self.pool.append (connection)
-            if key in self.used:
-                del self.used [key]
             self._idleconn (connection)
         else:
             connection.close ()
